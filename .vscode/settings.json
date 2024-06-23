@@ -1,0 +1,7 @@
+{
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "always"
+    },
+    "python.autoComplete.extraPaths": ["${workspaceFolder}"],
+    "python.analysis.extraPaths": ["${workspaceFolder}"]
+}

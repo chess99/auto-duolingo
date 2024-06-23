@@ -1,0 +1,6 @@
+appium-python-client
+uiautomator2
+opencv-python
+spacyls
+pytesseract
+zhipuai
