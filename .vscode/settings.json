@@ -1,7 +1,17 @@
 {
+    "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
-        "source.organizeImports": "always"
+        "source.fixAll": "explicit",
+        "source.organizeImports": "explicit"
     },
-    "python.autoComplete.extraPaths": ["${workspaceFolder}"],
-    "python.analysis.extraPaths": ["${workspaceFolder}"]
+    "python.languageServer": "Pylance",
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.completeFunctionParens": true,
+    "python.analysis.fixAll": [
+        "source.convertImportFormat",
+        "source.unusedImports",
+    ],
+    "python.analysis.inlayHints.functionReturnTypes": true,
+    "python.analysis.inlayHints.pytestParameters": true,
+    "python.analysis.inlayHints.variableTypes": true,
 }

@@ -1,15 +1,18 @@
-from zhipuai import ZhipuAI
-from config import ZHIPUAI_API_KEY  # Import configuration variable
-import re
 import ast  # Import the ast module
+import re
 from typing import List
+
+from zhipuai import ZhipuAI
+
+from config import ZHIPUAI_API_KEY  # Import configuration variable
 
 
 def extract_bracketed_content(input_str: str) -> List[str]:
     # Attempt to match content within square brackets using regex
     match = re.search(r'\[(.*?)\]', input_str)
     if match:
-        content = match.group(1)  # Get the matched content without the brackets
+        # Get the matched content without the brackets
+        content = match.group(1)
         try:
             # Safely parse the string using ast.literal_eval
             parsed_content = ast.literal_eval(content)
@@ -26,7 +29,7 @@ def extract_bracketed_content(input_str: str) -> List[str]:
 def generate_sorted_sentence(words: List[str], original_sentence: str) -> List[str]:
     print("Words: {}".format(words))
     print("Original Sentence: {}".format(original_sentence))
-    
+
     prompt = (
         "请根据原句的含义，从给定的词汇列表中选择一些词汇并重新排序, 使排序后的词汇能构造一个与原句意义相符的句子, 并且保证语法正确。"
         "请以Python列表格式直接提供最终的、经过筛选和排列的词汇列表。无需展示选择过程。"
@@ -34,7 +37,7 @@ def generate_sorted_sentence(words: List[str], original_sentence: str) -> List[s
         "词汇列表： {}\n"
         "原句： \"{}\""
     ).format(words, original_sentence)
-    
+
     # 使用ZhipuAI
     client = ZhipuAI(api_key=ZHIPUAI_API_KEY)  # Use the imported API key
     response = client.chat.completions.create(
@@ -44,17 +47,19 @@ def generate_sorted_sentence(words: List[str], original_sentence: str) -> List[s
         ],
     )
 
-    sorted_sentence_content = response.choices[0].message.content  # Access the content attribute directly
+    # Access the content attribute directly
+    sorted_sentence_content = response.choices[0].message.content
     print("Sorted Sentence Content: {}".format(sorted_sentence_content))
 
     # Use extract_bracketed_content to safely parse the sorted sentence list
     sorted_sentence_list = extract_bracketed_content(sorted_sentence_content)
     return sorted_sentence_list
 
+
 def generate_sorted_sentence_2(words: List[str], original_sentence: str) -> List[str]:
     print("Words: {}".format(words))
     print("Original Sentence: {}".format(original_sentence))
-    
+
     prompt = (
         "请将原句翻译成词汇列表对应的语言, 翻译结果只能使用词汇列表中有的词汇, 且每个词汇只能使用一次。"
         "请直接返回翻译后的语句, 不要添加多余的说明和符号。"
@@ -62,7 +67,7 @@ def generate_sorted_sentence_2(words: List[str], original_sentence: str) -> List
         "词汇列表： {}\n"
         "原句： \"{}\""
     ).format(words, original_sentence)
-    
+
     # 使用ZhipuAI
     client = ZhipuAI(api_key=ZHIPUAI_API_KEY)  # Use the imported API key
     response = client.chat.completions.create(
@@ -72,9 +77,10 @@ def generate_sorted_sentence_2(words: List[str], original_sentence: str) -> List
         ],
     )
 
-    translated_sentence = response.choices[0].message.content  # Access the content attribute directly
+    # Access the content attribute directly
+    translated_sentence = response.choices[0].message.content
     print("translated_sentence: {}".format(translated_sentence))
-    
+
     # 对比translated_sentence, 从words中选出所需词汇并排序
     sorted_sentence_list = []
 
@@ -92,7 +98,8 @@ if __name__ == "__main__":
         ('请把土豆细切。', (416, 582, 472, 162))
     ]
     original_sentence = boxes[-1][0]  # 翻译原句
-    words = [word for word, _ in boxes[:-1]]  # Extract words, excluding the original sentence
+    # Extract words, excluding the original sentence
+    words = [word for word, _ in boxes[:-1]]
 
     # 调用函数并打印结果
     sorted_sentence = generate_sorted_sentence(words, original_sentence)

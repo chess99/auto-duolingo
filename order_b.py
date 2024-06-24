@@ -1,4 +1,3 @@
-import itertools
 from translate import translate_sentence
 
 
@@ -17,6 +16,7 @@ def find_and_order_words(boxes, translated_sentence):
                 break
     return ordered_boxes
 
+
 # Example usage
 boxes = [
     ('を', (820, 1866, 130, 176)),
@@ -34,7 +34,8 @@ original_sentence = boxes[-1][0]
 translated_sentence = translate_sentence(original_sentence)
 
 # Find and order the words based on the translation
-ordered_boxes = find_and_order_words(boxes[:-1], translated_sentence)  # Exclude the original sentence from the boxes
+# Exclude the original sentence from the boxes
+ordered_boxes = find_and_order_words(boxes[:-1], translated_sentence)
 
 # Print the ordered boxes
 print("Ordered Boxes:", ordered_boxes)

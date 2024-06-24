@@ -1,7 +1,10 @@
-import requests
-import random
 import hashlib
+import random
+
+import requests
+
 from config import BAIDU_APP_ID, BAIDU_SECRET_KEY  # Import configuration variables
+
 
 def translate_sentence(original_sentence, target_language='jp'):
     """
@@ -20,17 +23,17 @@ def translate_sentence(original_sentence, target_language='jp'):
     References:
         Baidu Translate API Documentation: https://fanyi-api.baidu.com/doc/21
     """
-    
+
     appid = BAIDU_APP_ID  # Use appid from config.py
     secretKey = BAIDU_SECRET_KEY  # Use secretKey from config.py
     base_url = 'http://api.fanyi.baidu.com/api/trans/vip/translate'
-    
+
     # Generate random number
     salt = random.randint(32768, 65536)
     # Generate signature
     sign = appid + original_sentence + str(salt) + secretKey
     sign = hashlib.md5(sign.encode()).hexdigest()
-    
+
     # Build request parameters
     params = {
         'q': original_sentence,
@@ -40,16 +43,17 @@ def translate_sentence(original_sentence, target_language='jp'):
         'salt': str(salt),
         'sign': sign
     }
-    
+
     # Send request
     response = requests.get(base_url, params=params)
     print(response.json())
-    
+
     # Parse response
     result = response.json()
-    
+
     # Return translation result
     return result.get('trans_result', [{}])[0].get('dst', '')
+
 
 # Example usage
 if __name__ == "__main__":

@@ -1,4 +1,3 @@
-
 #### install `en_core_web_sm` model for spacy
 
 ```bash
@@ -10,7 +9,6 @@ python -m spacy download ja_core_news_sm
 
 #### install `tesseract` for pytesseract
 
-
 ```bash
 sudo apt install tesseract-ocr
 
@@ -21,8 +19,7 @@ sudo apt-get install tesseract-ocr-jpn
 
 install Tesseract on Windows:
 
-https://github.com/UB-Mannheim/tesseract/wiki
-
+<https://github.com/UB-Mannheim/tesseract/wiki>
 
 #### install `libgl1-mesa-glx` for `cv2.imshow()`
 

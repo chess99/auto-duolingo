@@ -1,6 +1,6 @@
 appium-python-client
 uiautomator2
 opencv-python
-spacyls
+spacy
 pytesseract
 zhipuai
