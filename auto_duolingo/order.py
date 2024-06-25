@@ -63,6 +63,7 @@ def generate_sorted_sentence(words: List[str], original_sentence: str) -> List[s
 
     prompt = (
         f"请将原句翻译成日语, 翻译结果只能使用词汇列表中有的词汇, 且每个词汇只能使用一次。"
+        f"不要使用列表中没有的词汇。"
         f"请直接返回翻译后的语句, 不要添加多余的说明和符号。"
         f"\n"
         f"词汇列表： {words}\n"

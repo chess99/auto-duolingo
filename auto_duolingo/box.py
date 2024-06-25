@@ -2,45 +2,9 @@ from typing import List, Tuple
 
 import cv2
 import numpy as np
-import pytesseract
-from PIL import Image
 
+from auto_duolingo.ocr_easyocr import ocr_on_single_box
 from auto_duolingo.order import generate_sorted_sentence
-
-# ========== Helper functions ==========
-
-
-def display_image(window_name, image):
-    # Resize image for display if it's too large
-    max_height = 600
-    max_width = 800
-    height, width = image.shape[:2]
-    scaling_factor = min(max_width/width, max_height/height)
-    if scaling_factor < 1:
-        image = cv2.resize(image, None, fx=scaling_factor,
-                           fy=scaling_factor, interpolation=cv2.INTER_AREA)
-    cv2.imshow(window_name, image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-
-def display_detected_boxes(image_path, boxes):
-    # Load the image
-    image = cv2.imread(image_path)
-
-    # Draw each box on the image and mark the index
-    for index, (x, y, w, h) in enumerate(boxes):
-        cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 2)
-        # Position for the index text: slightly above and to the left of the box
-        text_position = (x, y - 10 if y - 10 > 10 else y + 20)
-        # Put the index number on the box with a larger font size
-        cv2.putText(image, str(index), text_position,
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
-    # Display the image with boxes
-    display_image("Detected Boxes", image)
-
-# ========== Main functions ==========
 
 
 def detect_boxes_in_image(image_path: str) -> List[Tuple[int, int, int, int]]:
@@ -78,51 +42,16 @@ def detect_boxes_in_image(image_path: str) -> List[Tuple[int, int, int, int]]:
 
 def ocr_on_boxes(image_path: str, boxes: List[Tuple[int, int, int, int]]) -> List[Tuple[str, Tuple[int, int, int, int]]]:
     image = cv2.imread(image_path)
-    results = []  # Initialize an empty list to store OCR results with coordinates
-    num_boxes = len(boxes)
+    results = []
 
-    for i, (x, y, w, h) in enumerate(boxes):
-        if i < 2:  # Skip the first two boxes
-            continue
-        # Crop the image to the box
+    for i, box in enumerate(boxes[2:], start=2):  # Start from the third box
+        lang = 'ch_sim' if i == len(boxes) - 1 else 'ja'
+        x, y, w, h = box
         cropped_image = image[y:y+h, x:x+w]
-        # Convert the image to RGB (for pytesseract compatibility)
-        cropped_image_rgb = cv2.cvtColor(cropped_image, cv2.COLOR_BGR2RGB)
+        text_strip = ocr_on_single_box(cropped_image, lang)
+        results.append((text_strip, box))
 
-        # Image preprocessing: enhance contrast
-        alpha = 1.5  # Contrast control (1.0-3.0)
-        beta = 0  # Brightness control (0-100)
-        adjusted = cv2.convertScaleAbs(
-            cropped_image_rgb, alpha=alpha, beta=beta)
-
-        # Apply thresholding to filter out noise and improve OCR accuracy
-        # Convert to grayscale for thresholding
-        gray_image = cv2.cvtColor(adjusted, cv2.COLOR_RGB2GRAY)
-        # Apply thresholding
-        _, thresh_image = cv2.threshold(
-            gray_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-        # Determine the language for OCR and set the appropriate PSM value
-        if i == num_boxes - 1:  # If it's the last box, use Chinese and PSM 6
-            lang = 'chi_sim'
-            custom_config = r'--oem 3 --psm 3'
-        else:  # For other boxes, use Japanese and PSM 7
-            lang = 'jpn'
-            # 7: Treat the image as a single text line.
-            custom_config = r'--oem 3 --psm 7'
-
-        # Use pytesseract to do OCR on the thresholded image, specifying the language and custom config
-        text = pytesseract.image_to_string(Image.fromarray(
-            thresh_image), lang=lang, config=custom_config)
-        # Revised code to remove all whitespaces, including those in the middle
-        text_strip = "".join(text.split())
-
-        # display_image("thresh_image", thresh_image)
-        print(f"text_strip: {text_strip}")
-        # Append both the stripped text and its corresponding box coordinates
-        results.append((text_strip, (x, y, w, h)))
-
-    return results  # Return the list of tuples containing text and coordinates
+    return results
 
 
 def process_image_and_sort_text(image_path: str) -> List[Tuple[str, Tuple[int, int, int, int]]]:
@@ -152,11 +81,9 @@ def process_image_and_sort_text(image_path: str) -> List[Tuple[str, Tuple[int, i
 
     return sorted_text_boxes
 
-# ========= run this code ==========
-
 
 # Example usage
 if __name__ == "__main__":
-    image_path = "demo_images/chi_jpn_1.jpg"
+    image_path = "demo_images/chi_jpn_2.jpg"
     boxes = process_image_and_sort_text(image_path)
     print(boxes)
