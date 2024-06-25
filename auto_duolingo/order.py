@@ -1,10 +1,11 @@
-import ast  # Import the ast module
+import ast
 import re
 from typing import List
 
 from zhipuai import ZhipuAI
 
-from config import ZHIPUAI_API_KEY  # Import configuration variable
+from auto_duolingo.string_match import sort_substrings
+from config import ZHIPUAI_API_KEY
 
 
 def extract_bracketed_content(input_str: str) -> List[str]:
@@ -26,17 +27,17 @@ def extract_bracketed_content(input_str: str) -> List[str]:
         return []
 
 
-def generate_sorted_sentence(words: List[str], original_sentence: str) -> List[str]:
+def generate_sorted_sentence_2(words: List[str], original_sentence: str) -> List[str]:
     print("Words: {}".format(words))
     print("Original Sentence: {}".format(original_sentence))
 
     prompt = (
-        "请根据原句的含义，从给定的词汇列表中选择一些词汇并重新排序, 使排序后的词汇能构造一个与原句意义相符的句子, 并且保证语法正确。"
-        "请以Python列表格式直接提供最终的、经过筛选和排列的词汇列表。无需展示选择过程。"
-        "\n"
-        "词汇列表： {}\n"
-        "原句： \"{}\""
-    ).format(words, original_sentence)
+        f"请根据原句的含义，从给定的词汇列表中选择一些词汇并重新排序, 使排序后的词汇能构造一个与原句意义相符的句子, 并且保证语法正确。"
+        f"请以Python列表格式直接提供最终的、经过筛选和排列的词汇列表。无需展示选择过程。"
+        f"\n"
+        f"词汇列表： {words}\n"
+        f"原句： \"{original_sentence}\""
+    )
 
     # 使用ZhipuAI
     client = ZhipuAI(api_key=ZHIPUAI_API_KEY)  # Use the imported API key
@@ -56,17 +57,17 @@ def generate_sorted_sentence(words: List[str], original_sentence: str) -> List[s
     return sorted_sentence_list
 
 
-def generate_sorted_sentence_2(words: List[str], original_sentence: str) -> List[str]:
+def generate_sorted_sentence(words: List[str], original_sentence: str) -> List[str]:
     print("Words: {}".format(words))
     print("Original Sentence: {}".format(original_sentence))
 
     prompt = (
-        "请将原句翻译成词汇列表对应的语言, 翻译结果只能使用词汇列表中有的词汇, 且每个词汇只能使用一次。"
-        "请直接返回翻译后的语句, 不要添加多余的说明和符号。"
-        "\n"
-        "词汇列表： {}\n"
-        "原句： \"{}\""
-    ).format(words, original_sentence)
+        f"请将原句翻译成日语, 翻译结果只能使用词汇列表中有的词汇, 且每个词汇只能使用一次。"
+        f"请直接返回翻译后的语句, 不要添加多余的说明和符号。"
+        f"\n"
+        f"词汇列表： {words}\n"
+        f"原句： \"{original_sentence}\""
+    )
 
     # 使用ZhipuAI
     client = ZhipuAI(api_key=ZHIPUAI_API_KEY)  # Use the imported API key
@@ -82,7 +83,8 @@ def generate_sorted_sentence_2(words: List[str], original_sentence: str) -> List
     print("translated_sentence: {}".format(translated_sentence))
 
     # 对比translated_sentence, 从words中选出所需词汇并排序
-    sorted_sentence_list = []
+    sorted_substrings, unmatched = sort_substrings(translated_sentence, words)
+    return sorted_substrings
 
 
 if __name__ == "__main__":

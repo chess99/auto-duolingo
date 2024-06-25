@@ -1,4 +1,4 @@
-from translate import translate_sentence
+from auto_duolingo.translate import translate_sentence
 
 
 # Function to find and order words based on the translation

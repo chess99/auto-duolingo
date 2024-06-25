@@ -1,3 +1,19 @@
+## run
+
+start the program
+
+```bash
+python -m auto_duolingo.main
+```
+
+run tests
+
+```bash
+make test
+```
+
+## install deps
+
 #### install `en_core_web_sm` model for spacy
 
 ```bash

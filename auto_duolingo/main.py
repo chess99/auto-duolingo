@@ -1,7 +1,7 @@
 import time
 
-from adb_utils import capture_screen, perform_click
-from box import process_image_and_sort_text
+from auto_duolingo.adb_utils import capture_screen, perform_click
+from auto_duolingo.box import process_image_and_sort_text
 
 
 def simulate_clicks_on_sorted_boxes(debug=False):

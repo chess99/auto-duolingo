@@ -5,7 +5,7 @@ import numpy as np
 import pytesseract
 from PIL import Image
 
-from order import generate_sorted_sentence
+from auto_duolingo.order import generate_sorted_sentence
 
 # ========== Helper functions ==========
 
@@ -157,6 +157,6 @@ def process_image_and_sort_text(image_path: str) -> List[Tuple[str, Tuple[int, i
 
 # Example usage
 if __name__ == "__main__":
-    image_path = "demo_images/chi_jpn_2.jpg"
+    image_path = "demo_images/chi_jpn_1.jpg"
     boxes = process_image_and_sort_text(image_path)
     print(boxes)
