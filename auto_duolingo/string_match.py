@@ -20,6 +20,8 @@ def sort_substrings(sentence, substrings):
     """
     found_substrings = []
     for sub in substrings:
+        if sub == '':  # Skip empty strings to prevent infinite loop
+            continue
         start = 0
         while True:
             start = sentence.find(sub, start)

@@ -62,29 +62,46 @@ def generate_sorted_sentence(words: List[str], original_sentence: str) -> List[s
     print("Original Sentence: {}".format(original_sentence))
 
     prompt = (
-        f"请将原句翻译成日语, 翻译结果只能使用词汇列表中有的词汇, 且每个词汇只能使用一次。"
-        f"不要使用列表中没有的词汇。"
+        f"请将下列句子翻译成日语。"
+        f"翻译中仅使用以下词汇列表中的词汇，并且每个词汇仅使用一次。"
+        f"不要使用列表之外的词汇。"
+        f"确保翻译的句子意思与原句相符。"
         f"请直接返回翻译后的语句, 不要添加多余的说明和符号。"
         f"\n"
         f"词汇列表： {words}\n"
         f"原句： \"{original_sentence}\""
     )
 
-    # 使用ZhipuAI
-    client = ZhipuAI(api_key=ZHIPUAI_API_KEY)  # Use the imported API key
-    response = client.chat.completions.create(
-        model="glm-4",  # 填写需要调用的模型名称
-        messages=[
-            {"role": "user", "content": prompt},
-        ],
-    )
+    # Initialize variables for loop
+    translated_sentence = ""
+    unmatched = None
+    attempts = 0
+    max_attempts = 3  # Prevent infinite loops
 
-    # Access the content attribute directly
-    translated_sentence = response.choices[0].message.content
-    print("translated_sentence: {}".format(translated_sentence))
+    while attempts < max_attempts and (unmatched is None or unmatched.strip()):
+        attempts += 1
+        client = ZhipuAI(api_key=ZHIPUAI_API_KEY)
+        response = client.chat.completions.create(
+            model="glm-4",
+            messages=[
+                {"role": "user", "content": prompt},
+            ],
+        )
 
-    # 对比translated_sentence, 从words中选出所需词汇并排序
-    sorted_substrings, unmatched = sort_substrings(translated_sentence, words)
+        translated_sentence = response.choices[0].message.content
+        print("translated_sentence: {}".format(translated_sentence))
+
+        sorted_substrings, unmatched = sort_substrings(
+            translated_sentence, words)
+
+        # Remove punctuation from unmatched
+        unmatched = re.sub(r'[^\w\s]', '', unmatched)
+        print(f"unmatched: {unmatched}")
+
+        if unmatched.strip():
+            # Update prompt with unmatched content information
+            prompt += f"\n注意翻译时不要使用以下未在列表中的词汇：{unmatched}"
+
     return sorted_substrings
 
 

@@ -52,6 +52,12 @@ class TestSortSubstrings(unittest.TestCase):
         expected = (['りんご', 'バナナ', 'メロン'], 'とと')
         self.assertEqual(sort_substrings(sentence, substrings), expected)
 
+    def test_complex_sentence_with_empty_substring(self):
+        sentence = "じゃがいもを細かく刻んでください"
+        substrings = ['な', '細かく', '', 'で', 'ください', '大豆', '刻ん', 'じゃがいも']
+        expected = (['じゃがいも', '細かく', '刻ん', 'で', 'ください'], 'を')
+        self.assertEqual(sort_substrings(sentence, substrings), expected)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -3,7 +3,7 @@ from typing import List, Tuple
 import cv2
 import numpy as np
 
-from auto_duolingo.ocr_easyocr import ocr_on_single_box
+from auto_duolingo.ocr_tesseract import ocr_on_single_box_tesseract
 from auto_duolingo.order import generate_sorted_sentence
 
 
@@ -40,15 +40,32 @@ def detect_boxes_in_image(image_path: str) -> List[Tuple[int, int, int, int]]:
     return boxes  # Return the list of bounding boxes
 
 
+# def ocr_on_boxes(image_path: str, boxes: List[Tuple[int, int, int, int]]) -> List[Tuple[str, Tuple[int, int, int, int]]]:
+#     image = cv2.imread(image_path)
+#     results = []
+
+#     for i, box in enumerate(boxes[2:], start=2):  # Start from the third box
+#         lang = 'ch_sim' if i == len(boxes) - 1 else 'ja'
+#         x, y, w, h = box
+#         cropped_image = image[y:y+h, x:x+w]
+#         text_strip = ocr_on_single_box(cropped_image, lang)
+#         results.append((text_strip, box))
+
+#     return results
+
+
 def ocr_on_boxes(image_path: str, boxes: List[Tuple[int, int, int, int]]) -> List[Tuple[str, Tuple[int, int, int, int]]]:
     image = cv2.imread(image_path)
     results = []
 
     for i, box in enumerate(boxes[2:], start=2):  # Start from the third box
-        lang = 'ch_sim' if i == len(boxes) - 1 else 'ja'
+        is_last_box = i == len(boxes) - 1
+        lang = 'chi_sim' if is_last_box else 'jpn'
+        custom_config = r'--oem 3 --psm 3' if is_last_box else r'--oem 3 --psm 6'
         x, y, w, h = box
         cropped_image = image[y:y+h, x:x+w]
-        text_strip = ocr_on_single_box(cropped_image, lang)
+        text_strip = ocr_on_single_box_tesseract(
+            cropped_image, lang, custom_config)
         results.append((text_strip, box))
 
     return results

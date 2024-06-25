@@ -1,7 +1,11 @@
 import cv2
+import matplotlib.pyplot as plt
 
 
 def display_image(window_name, image):
+    # Convert BGR image to RGB
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
     # Resize image for display if it's too large
     max_height = 600
     max_width = 800
@@ -10,9 +14,13 @@ def display_image(window_name, image):
     if scaling_factor < 1:
         image = cv2.resize(image, None, fx=scaling_factor,
                            fy=scaling_factor, interpolation=cv2.INTER_AREA)
-    cv2.imshow(window_name, image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+
+    # Display the image with matplotlib
+    plt.figure(figsize=(10, 10))
+    plt.imshow(image)
+    plt.title(window_name)
+    plt.axis('off')  # Hide axis
+    plt.show()
 
 
 def display_detected_boxes(image_path, boxes):
