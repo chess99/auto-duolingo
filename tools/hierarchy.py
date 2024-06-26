@@ -2,6 +2,8 @@ import os
 
 import uiautomator2 as u2
 
+from tools.adb_utils import get_device_id
+
 
 def get_app_hierarchy(device_id, output_path):
     # Connect to the device
@@ -20,7 +22,7 @@ def get_app_hierarchy(device_id, output_path):
     return xml_hierarchy
 
 
-# Example usage
-device_id = "172.18.229.168:5555"
-hierarchy = get_app_hierarchy(device_id, ".temp/ui_hierarchy.xml")
-print(hierarchy)
+if __name__ == "__main__":
+    device_id = get_device_id()
+    if device_id is not None:
+        get_app_hierarchy(device_id, ".temp/hierarchy.xml")

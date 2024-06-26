@@ -6,7 +6,7 @@ wait for a specified amount of time, and then capture the screen.
 
 import time
 
-from auto_duolingo.adb_utils import capture_screen, check_app_launched
+from tools.adb_utils import capture_screen, check_app_launched
 
 
 def process_app_and_capture_screen(app_name, wait_time=5):

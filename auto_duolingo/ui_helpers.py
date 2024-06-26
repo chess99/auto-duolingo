@@ -21,9 +21,14 @@ def click_elements_sequentially(d: Device, elements: List[str]):
 
 
 def is_app_launched(d: Device) -> bool:
-    current_app = d.app_current()
-    print(f"current_app: {current_app}")
-    return current_app['package'] == 'com.duolingo'
+    # Retrieve the current UI hierarchy as a string or structured data
+    ui_hierarchy = d.dump_hierarchy()
+
+    # Check if 'package="com.duolingo"' is present in the UI hierarchy
+    if 'package="com.duolingo"' in ui_hierarchy:
+        return True
+
+    return False
 
 
 # 单元选择界面的元素

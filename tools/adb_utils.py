@@ -1,4 +1,31 @@
 import os
+import subprocess
+
+
+def list_devices():
+    result = subprocess.run(['adb', 'devices'], stdout=subprocess.PIPE)
+    lines = result.stdout.decode('utf-8').splitlines()
+    devices = [line.split('\t')[0] for line in lines if '\tdevice' in line]
+    return devices
+
+
+def select_device(devices):
+    if len(devices) == 1:
+        return devices[0]
+    else:
+        for i, device in enumerate(devices):
+            print(f"{i + 1}. {device}")
+        choice = int(input("Select a device by entering its number: ")) - 1
+        return devices[choice]
+
+
+def get_device_id():
+    devices = list_devices()
+    if not devices:
+        print("No devices found.")
+        return None
+    device_id = select_device(devices)
+    return device_id
 
 
 def check_app_launched(package_name):
