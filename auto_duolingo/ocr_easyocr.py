@@ -1,3 +1,7 @@
+"""
+API Documentation: https://www.jaided.ai/easyocr/
+"""
+
 import easyocr
 
 from auto_duolingo.ocr_preprocess import preprocess_image_for_ocr

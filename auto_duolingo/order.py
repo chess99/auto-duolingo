@@ -57,9 +57,9 @@ def generate_sorted_sentence_2(words: List[str], original_sentence: str) -> List
     return sorted_sentence_list
 
 
-def generate_sorted_sentence(words: List[str], original_sentence: str) -> List[str]:
-    print("Words: {}".format(words))
-    print("Original Sentence: {}".format(original_sentence))
+def generate_sorted_sentence(original_sentence: str, words: List[str]) -> List[str]:
+    print("original_sentence: {}".format(original_sentence))
+    print("words: {}".format(words))
 
     prompt = (
         f"请将下列句子翻译成日语。"
@@ -122,6 +122,6 @@ if __name__ == "__main__":
     words = [word for word, _ in boxes[:-1]]
 
     # 调用函数并打印结果
-    sorted_sentence = generate_sorted_sentence(words, original_sentence)
+    sorted_sentence = generate_sorted_sentence(original_sentence, words)
     print(sorted_sentence)
     print(type(sorted_sentence))

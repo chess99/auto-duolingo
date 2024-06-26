@@ -52,6 +52,12 @@ def capture_screen(filename='screenshot.png', local_path='.'):
     os.system(command)
 
 
+def remove_local_file(filename, local_path='.'):
+    file_path = os.path.join(local_path, filename)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+
 def perform_click(x, y):
     command = f'adb shell input tap {x} {y}'
     os.system(command)

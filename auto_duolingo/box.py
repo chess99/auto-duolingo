@@ -88,7 +88,7 @@ def process_image_and_sort_text(image_path: str) -> List[Tuple[str, Tuple[int, i
 
     # Sort words based on the original sentence
     sorted_word_list = generate_sorted_sentence(
-        words_to_sort, sentence_for_sorting)
+        sentence_for_sorting, words_to_sort)
 
     # Associate sorted words with their original positions
     word_position_mapping = {
