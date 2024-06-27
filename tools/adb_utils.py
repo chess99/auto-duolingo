@@ -6,6 +6,7 @@ def list_devices():
     result = subprocess.run(['adb', 'devices'], stdout=subprocess.PIPE)
     lines = result.stdout.decode('utf-8').splitlines()
     devices = [line.split('\t')[0] for line in lines if '\tdevice' in line]
+    print(f"Found {len(devices)} devices: {devices}")
     return devices
 
 

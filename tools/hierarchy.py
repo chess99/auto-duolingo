@@ -6,16 +6,12 @@ from tools.adb_utils import get_device_id
 
 
 def get_app_hierarchy(device_id, output_path):
-    # Connect to the device
+    print(f"Getting UI hierarchy for device {device_id}...")
+
     d = u2.connect(device_id)
-
-    # Get the current UI hierarchy
     xml_hierarchy = d.dump_hierarchy()
-
-    # Ensure the .temp directory exists
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-    # Optionally, save the hierarchy to a file for inspection
     with open(output_path, "w") as file:
         file.write(xml_hierarchy)
 
