@@ -1,11 +1,11 @@
 import time
 
 from auto_duolingo.DuolingoUIHelper import DuolingoUIHelper
-from auto_duolingo.lang_detect import detect_language
+from auto_duolingo.logger import log_incorrect_answer
 from auto_duolingo.question_answer import (
     QuestionType,
     solve_matching_pairs,
-    solve_translate_chi_jpn,
+    solve_translate_sentence,
     solve_translate_word,
 )
 
@@ -32,12 +32,7 @@ class DuolingoBot:
             return QuestionType.CHOOSE_MATCHING_PAIR
 
         if challenge_instruction == "翻译这句话":
-            sentence = self.ui_helper.extract_origin_sentence()
-            language = detect_language(sentence)
-            if language == "Chinese":
-                return QuestionType.TRANSLATE_CHI_TO_JPN
-            elif language == "Japanese":
-                return QuestionType.TRANSLATE_JPN_TO_CHI
+            return QuestionType.TRANSLATE_SENTENCE
 
         return QuestionType.UNKNOWN
 
@@ -80,24 +75,24 @@ class DuolingoBot:
             words, options = self.ui_helper.extract_matching_pairs()
             bounds_to_click = solve_matching_pairs(words, options)
             self.ui_helper.perform_clicks_by_bounds(bounds_to_click)
-            self.ui_helper.click_submit_button()
+            # self.ui_helper.click_submit_button() # 不需要点击提交按钮
             time.sleep(1)
             self.ui_helper.click_continue_button()
             time.sleep(1)
 
-        if question_type == QuestionType.TRANSLATE_CHI_TO_JPN:
+        if question_type == QuestionType.TRANSLATE_SENTENCE:
             self.ui_helper.reset_selected_answers()
             sentence = self.ui_helper.extract_origin_sentence()
             words = self.ui_helper.extract_alternative_options()
-            bounds_to_click = solve_translate_chi_jpn(sentence, words)
+            bounds_to_click = solve_translate_sentence(sentence, words)
             self.ui_helper.perform_clicks_by_bounds(bounds_to_click)
-
-        if question_type == QuestionType.TRANSLATE_JPN_TO_CHI:
-            self.ui_helper.reset_selected_answers()
-            sentence = self.ui_helper.extract_origin_sentence()
-            words = self.ui_helper.extract_alternative_options()
-            print(f"sentence: {sentence}")
-            print(f"words: {words}")
+            self.ui_helper.click_submit_button()
+            time.sleep(1)
+            result = self.ui_helper.get_answer_status()
+            if result["status"] == "incorrect":
+                log_incorrect_answer(result)
+            self.ui_helper.click_continue_button()
+            time.sleep(1)
 
     def run(self):
         print("Bot started running.")
@@ -111,6 +106,12 @@ class DuolingoBot:
             elif self.ui_helper.is_in_question_screen():
                 print("In question screen. Answering question...")
                 self.answer_question()
+            elif self.ui_helper.is_in_no_hearts_screen():
+                print("No hearts.")
+                self.state = "END"
+            elif self.ui_helper.is_waiting_continue():
+                print("Waiting for continue button. Clicking continue button...")
+                self.ui_helper.click_continue_button()
             else:
                 print("Unknown state. Resting for 1 second...")
                 time.sleep(1)

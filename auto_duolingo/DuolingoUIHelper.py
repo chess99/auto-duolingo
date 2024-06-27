@@ -42,7 +42,6 @@ class DuolingoUIHelper:
         elements_to_check = [
             "com.duolingo:id/submitButton",
             "com.duolingo:id/disableListenButton",
-            "com.duolingo:id/continueButtonYellow"
         ]
         return any(self.d(resourceId=element).exists for element in elements_to_check)
 
@@ -110,9 +109,15 @@ class DuolingoUIHelper:
         submit_button_id = "com.duolingo:id/submitButton"
         self.d(resourceId=submit_button_id).click()
 
+    def is_waiting_continue(self):
+        return any(self.d(resourceId=button_id).exists for button_id in CONTINUE_BUTTON_IDS)
+
     def click_continue_button(self):
-        continue_button_id = "com.duolingo:id/continueButtonGreen"
-        self.d(resourceId=continue_button_id).click()
+        for button_id in CONTINUE_BUTTON_IDS:
+            button = self.d(resourceId=button_id)
+            if button.exists:
+                button.click()
+                break
 
     def reset_selected_answers(self):
         selected_options = self.extract_selected_options()
@@ -174,6 +179,50 @@ class DuolingoUIHelper:
                 options.append((text, bounds))
         return words, options
 
+    def get_answer_status(self):
+        result = {
+            "status": "unknown",
+            "correct_answer": None,
+            "selected_answer": None
+        }
+        ribbon_primary_title_id = "com.duolingo:id/ribbonPrimaryTitle"
+        ribbon_primary_text_id = "com.duolingo:id/ribbonPrimaryText"
+        ribbon_primary_title_element = self.d(
+            resourceId=ribbon_primary_title_id)
+        if ribbon_primary_title_element.exists:
+            status_text = ribbon_primary_title_element.get_text()
+            if "不正确" in status_text:
+                result["status"] = "incorrect"
+                ribbon_primary_text_element = self.d(
+                    resourceId=ribbon_primary_text_id)
+                if ribbon_primary_text_element.exists:
+                    result["correct_answer"] = ribbon_primary_text_element.get_text()
+                # Extract selected options as a list of strings
+                selected_options = self.extract_selected_options()
+                result["selected_answer"] = [option[0]
+                                             for option in selected_options]
+            else:
+                result["status"] = "correct"
+        return result
+
+    def is_in_answer_grading_screen(self):
+        grading_ribbon_id = "com.duolingo:id/gradingRibbonContainer"
+        grading_ribbon_element = self.d(resourceId=grading_ribbon_id)
+        return grading_ribbon_element.exists
+
+    def is_in_no_hearts_screen(self) -> bool:
+        resource_id = "com.duolingo:id/noHeartsTitle"
+        element = self.d(resourceId=resource_id)
+        return element.exists
+
+    def click_no_thanks(self) -> bool:
+        resource_id = "com.duolingo:id/heartsNoThanks"
+        element = self.d(resourceId=resource_id, text="不，谢谢")
+        if element.exists:
+            element.click()
+            return True
+        return False
+
 
 # Constants used in the class
 ELEMENTS_OF_UNIT_SELECTION = [
@@ -181,11 +230,18 @@ ELEMENTS_OF_UNIT_SELECTION = [
     "com.duolingo:id/learnButton",
     "com.duolingo:id/startButton",
     "com.duolingo:id/primaryButton",
-
-
 ]
 
 ELEMENTS_OF_LISTENING_QUESTION = [
     "com.duolingo:id/disableListenButton",
     "com.duolingo:id/continueButtonYellow"
+]
+
+CONTINUE_BUTTON_GREEN = "com.duolingo:id/continueButtonGreen"
+CONTINUE_BUTTON_YELLOW = "com.duolingo:id/continueButtonYellow"
+CONTINUE_BUTTON_RED = "com.duolingo:id/continueButtonRed"
+CONTINUE_BUTTON_IDS = [
+    CONTINUE_BUTTON_GREEN,
+    CONTINUE_BUTTON_YELLOW,
+    CONTINUE_BUTTON_RED,
 ]

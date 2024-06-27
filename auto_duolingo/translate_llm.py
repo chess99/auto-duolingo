@@ -12,13 +12,14 @@ def generate_sorted_sentence(original_sentence: str, words: List[str]) -> List[s
     print("words: {}".format(words))
 
     prompt = (
-        f"请将下列句子翻译成日语。"
-        f"翻译中仅使用以下词汇列表中的词汇，并且每个词汇仅使用一次。"
-        f"不要使用列表之外的词汇。"
+        f"请将下列句子翻译。"
+        f"翻译中仅使用以下选项列表中的词汇，并且每个选项仅使用一次。"
+        f"不要使用选项列表之外的词汇。"
+        f"根据选项列表自动判断目标翻译语言。"
         f"确保翻译的句子意思与原句相符。"
         f"请直接返回翻译后的语句, 不要添加多余的说明和符号。"
         f"\n"
-        f"词汇列表： {words}\n"
+        f"选项列表： {words}\n"
         f"原句： \"{original_sentence}\""
     )
 
@@ -50,7 +51,7 @@ def generate_sorted_sentence(original_sentence: str, words: List[str]) -> List[s
 
         if unmatched.strip():
             # Update prompt with unmatched content information
-            prompt += f"\n注意翻译时不要使用以下未在列表中的词汇：{unmatched}"
+            prompt += f"\n注意翻译时不要使用以下未在选项列表中的词汇：{unmatched}"
 
     return sorted_substrings
 
@@ -87,8 +88,9 @@ def sort_translations_by_original_order(original_words: List[str], translations:
 
     prompt = (
         "Given two lists of words where the first list contains original words and the second list contains their translations "
-        "in a mixed order, sort the translations to match the order of the original words and return the sorted list of translations "
-        "separated by a hash (#) symbol. Do not include any explanations or additional content. Here are the lists:\n\n"
+        "in a mixed order, sort the translations to match the order of the original words. Return only the sorted list of translations "
+        "separated by a hash (#) symbol. Do not include the original words list, any explanations, or additional content. "
+        "Here are the lists:\n\n"
         "Original words:\n" + "\n".join(f"- {word}" for word in original_words) +
         "\n\nTranslations (mixed order):\n" +
         "\n".join(f"- {translation}" for translation in translations)

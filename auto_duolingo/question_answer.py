@@ -10,9 +10,8 @@ from auto_duolingo.translate_llm import (
 
 class QuestionType(Enum):
     UNKNOWN = 0
-    TRANSLATE_CHI_TO_JPN = 1
     # "翻译这句话"
-    TRANSLATE_JPN_TO_CHI = 2
+    TRANSLATE_SENTENCE = 2
     # "请选择正确的翻译", 一个单词, 三个翻译选项选择一个
     CHOOSE_CORRECT_TRANSLATION = 3
     # "选择对应的图片", 一个单词, 四个图片选项选择一个
@@ -21,7 +20,7 @@ class QuestionType(Enum):
     CHOOSE_MATCHING_PAIR = 5
 
 
-def solve_translate_chi_jpn(sentence: str, words_with_bounds: List[Tuple[str, Dict[str, int]]]):
+def solve_translate_sentence(sentence: str, words_with_bounds: List[Tuple[str, Dict[str, int]]]):
     sorted_boxes = generate_sorted_sentence(
         sentence, [word for word, _ in words_with_bounds])
     print(f"sorted_boxes: {sorted_boxes}")
