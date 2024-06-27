@@ -71,7 +71,7 @@ class DuolingoUIHelper:
         else:
             return ""
 
-    def extract_sentence(self) -> str:
+    def extract_origin_sentence(self) -> str:
         sentence_resource_id = "com.duolingo:id/hintablePrompt"
         sentence_element = self.d(resourceId=sentence_resource_id)
         if sentence_element.exists:
@@ -106,11 +106,73 @@ class DuolingoUIHelper:
             self.d.click(click_x, click_y)
             time.sleep(interval)
 
+    def click_submit_button(self):
+        submit_button_id = "com.duolingo:id/submitButton"
+        self.d(resourceId=submit_button_id).click()
+
+    def click_continue_button(self):
+        continue_button_id = "com.duolingo:id/continueButtonGreen"
+        self.d(resourceId=continue_button_id).click()
+
     def reset_selected_answers(self):
         selected_options = self.extract_selected_options()
         bounds_list = [option[1] for option in selected_options]
         bounds_list.reverse()
         self.perform_clicks_by_bounds(bounds_list)
+
+    def extract_option_list_of_word_translation(self) -> List[Tuple[str, Dict[str, int]]]:
+        """Extract options for word translation questions."""
+        container_resource_id = "com.duolingo:id/options"
+        options: List[Tuple[str, Dict[str, int]]] = []
+        container = self.d(resourceId=container_resource_id)
+        # Directly target the TextViews holding the option texts
+        option_text_elements = container.child(
+            resourceId="com.duolingo:id/optionText")
+        for element in option_text_elements:
+            if element.exists:
+                option_text: str = element.get_text()
+                bounds: Dict[str, int] = element.info['bounds']
+                option: Tuple[str, Dict[str, int]] = (option_text, bounds)
+                options.append(option)
+        return options
+
+    def extract_option_list_of_word_translation2(self) -> List[Tuple[str, Dict[str, int]]]:
+        """Extract options for word translation questions."""
+        container_resource_id = "com.duolingo:id/selection"
+        options: List[Tuple[str, Dict[str, int]]] = []
+        container = self.d(resourceId=container_resource_id)
+        # Directly target the TextViews holding the option texts
+        option_text_elements = container.child(
+            resourceId="com.duolingo:id/imageText")
+        for element in option_text_elements:
+            if element.exists:
+                option_text: str = element.get_text()
+                bounds: Dict[str, int] = element.info['bounds']
+                option: Tuple[str, Dict[str, int]] = (option_text, bounds)
+                options.append(option)
+        return options
+
+    def deselect_selected_option(self):
+        selected_option_id = "com.duolingo:id/optionText"
+        selected_option_element = self.d(
+            resourceId=selected_option_id, selected=True)
+        if selected_option_element.exists:
+            selected_option_element.click()
+
+    def extract_matching_pairs(self):
+        """Extract matching pairs for matching questions."""
+        option_text_id = "com.duolingo:id/optionText"
+        elements = self.d(resourceId=option_text_id)
+        words = []
+        options = []
+        for index, element in enumerate(elements):
+            text = element.get_text()
+            bounds: Dict[str, int] = element.info['bounds']
+            if index % 2 == 0:  # Even indices are original words
+                words.append((text, bounds))
+            else:  # Odd indices are translation options
+                options.append((text, bounds))
+        return words, options
 
 
 # Constants used in the class
@@ -119,6 +181,8 @@ ELEMENTS_OF_UNIT_SELECTION = [
     "com.duolingo:id/learnButton",
     "com.duolingo:id/startButton",
     "com.duolingo:id/primaryButton",
+
+
 ]
 
 ELEMENTS_OF_LISTENING_QUESTION = [

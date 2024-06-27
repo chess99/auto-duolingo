@@ -1,4 +1,3 @@
-import ast
 import re
 from typing import List
 
@@ -6,55 +5,6 @@ from zhipuai import ZhipuAI
 
 from auto_duolingo.string_match import sort_substrings
 from config import ZHIPUAI_API_KEY
-
-
-def extract_bracketed_content(input_str: str) -> List[str]:
-    # Attempt to match content within square brackets using regex
-    match = re.search(r'\[(.*?)\]', input_str)
-    if match:
-        # Get the matched content without the brackets
-        content = match.group(1)
-        try:
-            # Safely parse the string using ast.literal_eval
-            parsed_content = ast.literal_eval(content)
-            return parsed_content
-        except Exception as e:
-            # Print error and return an empty string if parsing fails
-            print(f"Error parsing content: {e}")
-            return []
-    else:
-        # Return an empty string if no content is matched
-        return []
-
-
-def generate_sorted_sentence_2(words: List[str], original_sentence: str) -> List[str]:
-    print("Words: {}".format(words))
-    print("Original Sentence: {}".format(original_sentence))
-
-    prompt = (
-        f"请根据原句的含义，从给定的词汇列表中选择一些词汇并重新排序, 使排序后的词汇能构造一个与原句意义相符的句子, 并且保证语法正确。"
-        f"请以Python列表格式直接提供最终的、经过筛选和排列的词汇列表。无需展示选择过程。"
-        f"\n"
-        f"词汇列表： {words}\n"
-        f"原句： \"{original_sentence}\""
-    )
-
-    # 使用ZhipuAI
-    client = ZhipuAI(api_key=ZHIPUAI_API_KEY)  # Use the imported API key
-    response = client.chat.completions.create(
-        model="glm-4",  # 填写需要调用的模型名称
-        messages=[
-            {"role": "user", "content": prompt},
-        ],
-    )
-
-    # Access the content attribute directly
-    sorted_sentence_content = response.choices[0].message.content
-    print("Sorted Sentence Content: {}".format(sorted_sentence_content))
-
-    # Use extract_bracketed_content to safely parse the sorted sentence list
-    sorted_sentence_list = extract_bracketed_content(sorted_sentence_content)
-    return sorted_sentence_list
 
 
 def generate_sorted_sentence(original_sentence: str, words: List[str]) -> List[str]:
@@ -103,6 +53,61 @@ def generate_sorted_sentence(original_sentence: str, words: List[str]) -> List[s
             prompt += f"\n注意翻译时不要使用以下未在列表中的词汇：{unmatched}"
 
     return sorted_substrings
+
+
+def pick_translation_for_word(original_word: str, options: List[str]) -> str:
+    print(f"original_word: {original_word}")
+    print(f"options: {options}")
+
+    # Formatting options for clarity
+    formatted_options = "\n".join([f"- {option}" for option in options])
+
+    prompt = (
+        f"Given the word '{original_word}', select the correct translation from the following options:\n"
+        f"{formatted_options}\n"
+        f"Type the correct option exactly as it appears above."
+    )
+
+    client = ZhipuAI(api_key=ZHIPUAI_API_KEY)
+    response = client.chat.completions.create(
+        model="glm-4",
+        messages=[
+            {"role": "user", "content": prompt},
+        ],
+    )
+
+    answer = response.choices[0].message.content.strip()
+    print(f"answer: {answer}")
+    return answer
+
+
+def sort_translations_by_original_order(original_words: List[str], translations: List[str]) -> List[str]:
+    print(f"original_words: {original_words}")
+    print(f"translations: {translations}")
+
+    prompt = (
+        "Given two lists of words where the first list contains original words and the second list contains their translations "
+        "in a mixed order, sort the translations to match the order of the original words and return the sorted list of translations "
+        "separated by a hash (#) symbol. Do not include any explanations or additional content. Here are the lists:\n\n"
+        "Original words:\n" + "\n".join(f"- {word}" for word in original_words) +
+        "\n\nTranslations (mixed order):\n" +
+        "\n".join(f"- {translation}" for translation in translations)
+    )
+
+    client = ZhipuAI(api_key=ZHIPUAI_API_KEY)
+    response = client.chat.completions.create(
+        model="glm-4",
+        messages=[
+            {"role": "user", "content": prompt},
+        ],
+    )
+
+    response_content = response.choices[0].message.content.strip()
+    print(f"response_content: {response_content}")
+
+    # Remove the trailing hash (if any) before splitting
+    sorted_translations = response_content.rstrip('#').split('#')
+    return sorted_translations
 
 
 if __name__ == "__main__":

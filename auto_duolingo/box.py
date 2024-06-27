@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 
 from auto_duolingo.ocr_tesseract import ocr_on_single_box_tesseract
-from auto_duolingo.order import generate_sorted_sentence
+from auto_duolingo.translate_llm import generate_sorted_sentence
 
 
 def detect_boxes_in_image(image_path: str) -> List[Tuple[int, int, int, int]]:

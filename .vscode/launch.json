@@ -2,18 +2,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: WSL",
-            "type": "debugpy",
+            "name": "Python: Module - auto_duolingo.main",
+            "type": "python",
             "request": "launch",
-            "program": "${file}",
-            "args": [],
-            "console": "integratedTerminal",
-            "pathMappings": [
-                {
-                    "localRoot": "${workspaceFolder}",
-                    "remoteRoot": "/mnt/c/path/to/your/project"
-                }
-            ]
+            "module": "auto_duolingo.main",
+            "console": "integratedTerminal"
         }
     ]
 }
