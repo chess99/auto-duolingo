@@ -1,3 +1,4 @@
+import re
 import time
 from typing import Dict, List, Tuple
 
@@ -125,14 +126,12 @@ class DuolingoUIHelper:
         bounds_list.reverse()
         self.perform_clicks_by_bounds(bounds_list)
 
-    def extract_option_list_of_word_translation(self) -> List[Tuple[str, Dict[str, int]]]:
-        """Extract options for word translation questions."""
-        container_resource_id = "com.duolingo:id/options"
+    def extract_option_list(self, container_resource_id: str, option_text_resource_id: str) -> List[Tuple[str, Dict[str, int]]]:
+        """Extract options from a specified container and option text resource IDs."""
         options: List[Tuple[str, Dict[str, int]]] = []
         container = self.d(resourceId=container_resource_id)
-        # Directly target the TextViews holding the option texts
         option_text_elements = container.child(
-            resourceId="com.duolingo:id/optionText")
+            resourceId=option_text_resource_id)
         for element in option_text_elements:
             if element.exists:
                 option_text: str = element.get_text()
@@ -141,21 +140,14 @@ class DuolingoUIHelper:
                 options.append(option)
         return options
 
-    def extract_option_list_of_word_translation2(self) -> List[Tuple[str, Dict[str, int]]]:
-        """Extract options for word translation questions."""
-        container_resource_id = "com.duolingo:id/selection"
-        options: List[Tuple[str, Dict[str, int]]] = []
-        container = self.d(resourceId=container_resource_id)
-        # Directly target the TextViews holding the option texts
-        option_text_elements = container.child(
-            resourceId="com.duolingo:id/imageText")
-        for element in option_text_elements:
-            if element.exists:
-                option_text: str = element.get_text()
-                bounds: Dict[str, int] = element.info['bounds']
-                option: Tuple[str, Dict[str, int]] = (option_text, bounds)
-                options.append(option)
-        return options
+    def extract_option_list_of_word_translation(self) -> List[Tuple[str, Dict[str, int]]]:
+        return self.extract_option_list("com.duolingo:id/options", "com.duolingo:id/optionText")
+
+    def extract_option_list_of_images(self) -> List[Tuple[str, Dict[str, int]]]:
+        return self.extract_option_list("com.duolingo:id/selection", "com.duolingo:id/imageText")
+
+    def extract_option_list_of_scaled_text(self) -> List[Tuple[str, Dict[str, int]]]:
+        return self.extract_option_list("com.duolingo:id/selection", "com.duolingo:id/scaledText")
 
     def deselect_selected_option(self):
         selected_option_id = "com.duolingo:id/optionText"
@@ -183,7 +175,8 @@ class DuolingoUIHelper:
         result = {
             "status": "unknown",
             "correct_answer": None,
-            "selected_answer": None
+            "selected_answer": None,
+            "original_sentence": None
         }
         ribbon_primary_title_id = "com.duolingo:id/ribbonPrimaryTitle"
         ribbon_primary_text_id = "com.duolingo:id/ribbonPrimaryText"
@@ -203,6 +196,8 @@ class DuolingoUIHelper:
                                              for option in selected_options]
             else:
                 result["status"] = "correct"
+            # Extract the original sentence
+            result["original_sentence"] = self.extract_origin_sentence()
         return result
 
     def is_in_answer_grading_screen(self):
@@ -222,6 +217,29 @@ class DuolingoUIHelper:
             element.click()
             return True
         return False
+
+    def extract_flashcard_text(self) -> str:
+        flashcard_resource_id = "com.duolingo:id/flashcard"
+        character_resource_id = "com.duolingo:id/character"
+        flashcard_element = self.d(resourceId=flashcard_resource_id)
+        if flashcard_element.exists:
+            character_element = flashcard_element.child(
+                resourceId=character_resource_id)
+            if character_element.exists:
+                return character_element.get_text()
+        return ""
+
+    def extract_question_stem_text(self) -> str:
+        challenge_instruction_resource_id = "com.duolingo:id/challengeInstruction"
+        challenge_instruction_element = self.d(
+            resourceId=challenge_instruction_resource_id)
+        if challenge_instruction_element.exists:
+            text = challenge_instruction_element.get_text()
+            # Extract text within quotes
+            match = re.search(r'“(.+?)”', text)
+            if match:
+                return match.group(1)
+        return ""
 
 
 # Constants used in the class

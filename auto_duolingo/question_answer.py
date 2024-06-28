@@ -3,7 +3,7 @@ from typing import Dict, List, Tuple
 
 from auto_duolingo.translate_llm import (
     generate_sorted_sentence,
-    pick_translation_for_word,
+    pick_semantically_matching_word,
     sort_translations_by_original_order,
 )
 
@@ -18,6 +18,10 @@ class QuestionType(Enum):
     CHOOSE_CORRECT_PICTURE = 4
     # "选择配对", 左边五个原词, 从右边五个词中选择对应的翻译
     CHOOSE_MATCHING_PAIR = 5
+    # "这个怎么读？"
+    HOW_TO_PRONOUNCE = 6
+    # "选择 “xxxx” 对应的字符", 一个平假名单词, 四个汉字选项选择一个
+    CHOOSE_CORRECT_CHARACTER = 7
 
 
 def solve_translate_sentence(sentence: str, words_with_bounds: List[Tuple[str, Dict[str, int]]]):
@@ -46,7 +50,7 @@ def solve_translate_word(word: str, options_with_bounds: List[Tuple[str, Dict[st
     options = [option for option, _ in options_with_bounds]
 
     # Use the tool function to pick the correct translation
-    correct_translation = pick_translation_for_word(word, options)
+    correct_translation = pick_semantically_matching_word(word, options)
 
     # Find the bounds for the correct translation
     bounds_to_click = []

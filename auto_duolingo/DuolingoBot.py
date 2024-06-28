@@ -34,6 +34,12 @@ class DuolingoBot:
         if challenge_instruction == "翻译这句话":
             return QuestionType.TRANSLATE_SENTENCE
 
+        if "这个怎么读" in challenge_instruction:
+            return QuestionType.HOW_TO_PRONOUNCE
+
+        if "选择" in challenge_instruction and "对应的字符" in challenge_instruction:
+            return QuestionType.CHOOSE_CORRECT_CHARACTER
+
         return QuestionType.UNKNOWN
 
     def answer_question(self):
@@ -62,7 +68,7 @@ class DuolingoBot:
         if question_type == QuestionType.CHOOSE_CORRECT_PICTURE:
             self.ui_helper.deselect_selected_option()
             word = self.ui_helper.extract_origin_sentence()
-            options = self.ui_helper.extract_option_list_of_word_translation2()
+            options = self.ui_helper.extract_option_list_of_images()
             bounds_to_click = solve_translate_word(word, options)
             self.ui_helper.perform_clicks_by_bounds(bounds_to_click)
             self.ui_helper.click_submit_button()
@@ -91,6 +97,28 @@ class DuolingoBot:
             result = self.ui_helper.get_answer_status()
             if result["status"] == "incorrect":
                 log_incorrect_answer(result)
+            self.ui_helper.click_continue_button()
+            time.sleep(1)
+
+        if question_type == QuestionType.HOW_TO_PRONOUNCE:
+            self.ui_helper.deselect_selected_option()
+            word = self.ui_helper.extract_flashcard_text()
+            options = self.ui_helper.extract_option_list_of_word_translation()
+            bounds_to_click = solve_translate_word(word, options)
+            self.ui_helper.perform_clicks_by_bounds(bounds_to_click)
+            self.ui_helper.click_submit_button()
+            time.sleep(1)
+            self.ui_helper.click_continue_button()
+            time.sleep(1)
+
+        if question_type == QuestionType.CHOOSE_CORRECT_CHARACTER:
+            self.ui_helper.deselect_selected_option()
+            word = self.ui_helper.extract_question_stem_text()
+            options = self.ui_helper.extract_option_list_of_scaled_text()
+            bounds_to_click = solve_translate_word(word, options)
+            self.ui_helper.perform_clicks_by_bounds(bounds_to_click)
+            self.ui_helper.click_submit_button()
+            time.sleep(1)
             self.ui_helper.click_continue_button()
             time.sleep(1)
 
