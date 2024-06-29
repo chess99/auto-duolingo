@@ -61,9 +61,7 @@ class DuolingoBot:
             bounds_to_click = solve_translate_word(word, options)
             self.ui_helper.perform_clicks_by_bounds(bounds_to_click)
             self.ui_helper.click_submit_button()
-            time.sleep(1)
             self.ui_helper.click_continue_button()
-            time.sleep(1)
 
         if question_type == QuestionType.CHOOSE_CORRECT_PICTURE:
             self.ui_helper.deselect_selected_option()
@@ -72,9 +70,7 @@ class DuolingoBot:
             bounds_to_click = solve_translate_word(word, options)
             self.ui_helper.perform_clicks_by_bounds(bounds_to_click)
             self.ui_helper.click_submit_button()
-            time.sleep(1)
             self.ui_helper.click_continue_button()
-            time.sleep(1)
 
         if question_type == QuestionType.CHOOSE_MATCHING_PAIR:
             self.ui_helper.deselect_selected_option()
@@ -82,9 +78,7 @@ class DuolingoBot:
             bounds_to_click = solve_matching_pairs(words, options)
             self.ui_helper.perform_clicks_by_bounds(bounds_to_click)
             # self.ui_helper.click_submit_button() # 不需要点击提交按钮
-            time.sleep(1)
             self.ui_helper.click_continue_button()
-            time.sleep(1)
 
         if question_type == QuestionType.TRANSLATE_SENTENCE:
             self.ui_helper.reset_selected_answers()
@@ -93,12 +87,10 @@ class DuolingoBot:
             bounds_to_click = solve_translate_sentence(sentence, words)
             self.ui_helper.perform_clicks_by_bounds(bounds_to_click)
             self.ui_helper.click_submit_button()
-            time.sleep(1)
             result = self.ui_helper.get_answer_status()
             if result["status"] == "incorrect":
                 log_incorrect_answer(result)
             self.ui_helper.click_continue_button()
-            time.sleep(1)
 
         if question_type == QuestionType.HOW_TO_PRONOUNCE:
             self.ui_helper.deselect_selected_option()
@@ -107,9 +99,7 @@ class DuolingoBot:
             bounds_to_click = solve_translate_word(word, options)
             self.ui_helper.perform_clicks_by_bounds(bounds_to_click)
             self.ui_helper.click_submit_button()
-            time.sleep(1)
             self.ui_helper.click_continue_button()
-            time.sleep(1)
 
         if question_type == QuestionType.CHOOSE_CORRECT_CHARACTER:
             self.ui_helper.deselect_selected_option()
@@ -118,9 +108,7 @@ class DuolingoBot:
             bounds_to_click = solve_translate_word(word, options)
             self.ui_helper.perform_clicks_by_bounds(bounds_to_click)
             self.ui_helper.click_submit_button()
-            time.sleep(1)
             self.ui_helper.click_continue_button()
-            time.sleep(1)
 
     def run(self):
         print("Bot started running.")

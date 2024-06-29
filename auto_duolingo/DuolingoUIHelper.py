@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 
 import uiautomator2 as u2
 
+from auto_duolingo.Tabs import Tabs
 from tools.adb_utils import get_device_id
 
 
@@ -109,6 +110,7 @@ class DuolingoUIHelper:
     def click_submit_button(self):
         submit_button_id = "com.duolingo:id/submitButton"
         self.d(resourceId=submit_button_id).click()
+        time.sleep(0.1)
 
     def is_waiting_continue(self):
         return any(self.d(resourceId=button_id).exists for button_id in CONTINUE_BUTTON_IDS)
@@ -119,6 +121,7 @@ class DuolingoUIHelper:
             if button.exists:
                 button.click()
                 break
+        time.sleep(0.1)
 
     def reset_selected_answers(self):
         selected_options = self.extract_selected_options()
@@ -241,6 +244,13 @@ class DuolingoUIHelper:
                 return match.group(1)
         return ""
 
+    def select_tab(self, tab: Tabs) -> bool:
+        element = self.d(resourceId=tab.resource_id)
+        if element.exists:
+            element.click()
+            return True
+        return False
+
 
 # Constants used in the class
 ELEMENTS_OF_UNIT_SELECTION = [
@@ -258,8 +268,10 @@ ELEMENTS_OF_LISTENING_QUESTION = [
 CONTINUE_BUTTON_GREEN = "com.duolingo:id/continueButtonGreen"
 CONTINUE_BUTTON_YELLOW = "com.duolingo:id/continueButtonYellow"
 CONTINUE_BUTTON_RED = "com.duolingo:id/continueButtonRed"
+CONTINUE_BUTTON_COACH = "com.duolingo:id/coachContinueButton"
 CONTINUE_BUTTON_IDS = [
     CONTINUE_BUTTON_GREEN,
     CONTINUE_BUTTON_YELLOW,
     CONTINUE_BUTTON_RED,
+    CONTINUE_BUTTON_COACH,
 ]
