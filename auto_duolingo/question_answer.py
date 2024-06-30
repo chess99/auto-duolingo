@@ -1,8 +1,11 @@
 from enum import Enum
 from typing import Dict, List, Tuple
 
+from auto_duolingo.SentencePairDB import SentencePairDB
+from auto_duolingo.string_match import sort_substrings
 from auto_duolingo.translate_llm import (
     generate_sorted_sentence,
+    pick_corresponding_pronunciation,
     pick_semantically_matching_word,
     sort_translations_by_original_order,
 )
@@ -24,22 +27,32 @@ class QuestionType(Enum):
     CHOOSE_CORRECT_CHARACTER = 7
 
 
-def solve_translate_sentence(sentence: str, words_with_bounds: List[Tuple[str, Dict[str, int]]]):
-    sorted_boxes = generate_sorted_sentence(
-        sentence, [word for word, _ in words_with_bounds])
-    print(f"sorted_boxes: {sorted_boxes}")
+def solve_translate_sentence(sentence: str, options_with_bounds: List[Tuple[str, Dict[str, int]]]):
+    db_instance = SentencePairDB()
+    translation = db_instance.get_complementary_sentence(sentence)
+
+    if translation is not None:
+        print(f"Translation found in the database: {translation}")
+        sorted_substrings, unmatched = sort_substrings(
+            translation,  [substring for substring, _ in options_with_bounds])
+
+    if translation is None:
+        sorted_substrings = generate_sorted_sentence(
+            sentence, [substring for substring, _ in options_with_bounds])
+
+    print(f"sorted_substrings: {sorted_substrings}")
 
     # Convert list of tuples to a list of dictionaries to keep track of processed words
-    words_with_bounds_dicts = [{'word': word, 'bounds': bounds,
-                                'processed': False} for word, bounds in words_with_bounds]
+    options_with_bounds_dicts = [{'substring': substring, 'bounds': bounds,
+                                  'processed': False} for substring, bounds in options_with_bounds]
 
     # Collect bounds in the order they appear in sorted_boxes
     bounds_to_click = []
-    for word in sorted_boxes:
-        for word_dict in words_with_bounds_dicts:
-            if word_dict['word'] == word and not word_dict['processed']:
-                bounds_to_click.append(word_dict['bounds'])
-                word_dict['processed'] = True  # Mark as processed
+    for substring in sorted_substrings:
+        for option_dict in options_with_bounds_dicts:
+            if option_dict['substring'] == substring and not option_dict['processed']:
+                bounds_to_click.append(option_dict['bounds'])
+                option_dict['processed'] = True  # Mark as processed
                 break  # Move to the next word in sorted_boxes
 
     return bounds_to_click
@@ -56,6 +69,23 @@ def solve_translate_word(word: str, options_with_bounds: List[Tuple[str, Dict[st
     bounds_to_click = []
     for option, bounds in options_with_bounds:
         if option == correct_translation:
+            bounds_to_click.append(bounds)
+            break
+
+    return bounds_to_click
+
+
+def solve_word_pronunciation(word: str, options_with_bounds: List[Tuple[str, Dict[str, int]]]):
+    # Extract options from options_with_bounds
+    options = [option for option, _ in options_with_bounds]
+
+    # Use the tool function to pick the correct pronunciation
+    correct_pronunciation = pick_corresponding_pronunciation(word, options)
+
+    # Find the bounds for the correct pronunciation
+    bounds_to_click = []
+    for option, bounds in options_with_bounds:
+        if option == correct_pronunciation:
             bounds_to_click.append(bounds)
             break
 

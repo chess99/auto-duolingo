@@ -1,6 +1,9 @@
 # my temp files
 .temp/
 /config.py
+configs/*.py
+!configs/__init__.py
+/data/
 
 # PyCharm files
 .idea/

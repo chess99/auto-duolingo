@@ -72,6 +72,19 @@ class DuolingoUIHelper:
         else:
             return ""
 
+    def click_element_if_exists(self, resource_id: str) -> bool:
+        element = self.d(resourceId=resource_id)
+        if element.exists:
+            element.click()
+            time.sleep(0.1)
+            return True
+        else:
+            return False
+
+    def click_hint_text_if_exists(self) -> bool:
+        """ 轻点此处查看词库 """
+        return self.click_element_if_exists("com.duolingo:id/hintText")
+
     def extract_origin_sentence(self) -> str:
         sentence_resource_id = "com.duolingo:id/hintablePrompt"
         sentence_element = self.d(resourceId=sentence_resource_id)
@@ -98,7 +111,12 @@ class DuolingoUIHelper:
         return self.extract_option_list_base("com.duolingo:id/guessContainer")
 
     def extract_alternative_options(self):
-        return self.extract_option_list_base("com.duolingo:id/optionsContainer")
+        options = self.extract_option_list_base(
+            "com.duolingo:id/optionsContainer")
+        if not options:
+            options = self.extract_option_list_base(
+                "com.duolingo:id/tapOptions")
+        return options
 
     def perform_clicks_by_bounds(self, bounds_list: List[Dict[str, int]], interval: float = 0.1):
         for bounds in bounds_list:

@@ -1,9 +1,9 @@
+import re
 from typing import List
 
-from volcenginesdkarkruntime import Ark
 from zhipuai import ZhipuAI
 
-from config import ARK_API_KEY, ZHIPUAI_API_KEY
+from config import ZHIPUAI_API_KEY
 
 
 def generate_sorted_sentence(original_sentence: str, substrings: List[str]) -> List[str]:
@@ -12,8 +12,10 @@ def generate_sorted_sentence(original_sentence: str, substrings: List[str]) -> L
 
     prompt = (
         "Task: \n"
-        "From the given options, select and reorder the substrings to form a coherent translation "
-        "of the source sentence according to the target language's linguistic conventions. You may not need to use all the provided substrings.\n"
+        "First, identify the target language's specific variety from the context or the provided options. "
+        "Then, from the given options, select and reorder the substrings to form a coherent translation "
+        "of the source sentence according to the linguistic conventions of the identified target language variety. "
+        "You may not need to use all the provided substrings.\n"
         "Rules:\n"
         "1. Use ONLY the provided substrings. It's not mandatory to use all of them.\n"
         "2. Each substring can be used only as many times as it appears in the list.\n"
@@ -21,7 +23,7 @@ def generate_sorted_sentence(original_sentence: str, substrings: List[str]) -> L
         "   a. Words directly related to the original sentence's meaning.\n"
         "   b. Including necessary particles and modal words to maintain the sentence's integrity and tone.\n"
         "   c. Avoid selecting words that are unrelated to the original sentence's meaning.\n"
-        "   d. The order of the selected substrings must follow the linguistic conventions of the target language.\n"
+        "   d. The order of the selected substrings must follow the linguistic conventions of the identified target language variety.\n"
         "4. Output the result as a single string with substrings separated by '#'. Do not include any punctuation marks.\n"
         "5. Strictly follow the output format and do not include any additional content, explanations, or punctuation marks.\n"
         "6. Output format: substringA#substringB#substringC#...\n"
@@ -29,23 +31,21 @@ def generate_sorted_sentence(original_sentence: str, substrings: List[str]) -> L
         "   a. Can the selected substrings form a smooth and grammatically correct sentence in the target language?\n"
         "   b. Does the formed sentence accurately convey the same meaning as the original sentence?\n"
         "   c. Are there any selected substrings that do not belong to the provided list of options?\n"
-        "   d. Does the formed sentence follows the linguistic conventions of the target language?\n"
+        "   d. Does the formed sentence follow the linguistic conventions of the identified target language variety?\n"
         "Answer the following question based on the given instructions:\n"
         f"Original sentence: \"{original_sentence}\"\n"
         f"Substrings to use: {', '.join(substrings)}\n"
         "Return ONLY the hash-separated string as your response."
     )
 
-    # print(f"prompt:\n{prompt}")
-
-    # client = ZhipuAI(api_key=ZHIPUAI_API_KEY)
-    client = Ark(api_key=ARK_API_KEY)
+    client = ZhipuAI(api_key=ZHIPUAI_API_KEY)
+    # client = Ark(api_key=ARK_API_KEY)
     max_attempts = 3
 
     for attempt in range(max_attempts):
         response = client.chat.completions.create(
-            # model="glm-4",
-            model="ep-20240629142039-bt9sd",
+            model="glm-4",
+            # model="ep-20240629142039-bt9sd",
             messages=[
                 {"role": "system", "content": "You are a precise translation assistant."},
                 {"role": "user", "content": prompt},
@@ -57,17 +57,22 @@ def generate_sorted_sentence(original_sentence: str, substrings: List[str]) -> L
         response_content = response.choices[0].message.content.strip()
         print(f"Attempt {attempt + 1} result: {response_content}")
 
-        sorted_options = response_content.rstrip('#').split('#')
+        sorted_options = [re.sub(r'[^\w\s]', '', option.strip())
+                          for option in response_content.rstrip('#').split('#')]
+        sorted_options = list(filter(None, sorted_options))
         unmatched = [
             substring for substring in sorted_options if substring not in substrings]
 
         if unmatched:
+            print("unmatched: ", unmatched)
             prompt += f"\n\nPrevious attempt: {response_content}\nError: Some substrings were not in the provided list or were used incorrectly. Please try again using ONLY the given substrings."
         else:
             return sorted_options
 
     print("Error: Could not generate a valid translation with the provided substrings.")
     return []
+
+# "Respond with only the selected option. Do not include any additional text or explanation."
 
 
 def pick_semantically_matching_word(original_word: str, options: List[str]) -> str:
@@ -87,6 +92,7 @@ def pick_semantically_matching_word(original_word: str, options: List[str]) -> s
     response = client.chat.completions.create(
         model="glm-4",
         messages=[{"role": "user", "content": prompt}],
+        temperature=0
     )
 
     answer = response.choices[0].message.content.strip()
@@ -95,7 +101,42 @@ def pick_semantically_matching_word(original_word: str, options: List[str]) -> s
     if answer in options:
         return answer
     else:
-        return "Error: The selected option was not provided in the list."
+        print("Error: The selected option was not provided in the list.")
+        return None
+
+
+def pick_corresponding_pronunciation(original_word: str, options: List[str]) -> str:
+    print(f"Original word: {original_word}")
+    print(f"Options: {options}")
+
+    formatted_options = "\n".join([f"- {option}" for option in options])
+
+    prompt = (
+        f"Given the word '{original_word}', select the option that best matches its pronunciation. "
+        "The options provided are in various phonetic representations such as Pinyin for Chinese, "
+        "Romaji for Japanese, or Hiragana. This task focuses on matching the pronunciation rather than the meaning. "
+        "In cases where the original word may correspond to multiple pronunciations in the options, "
+        "consider the meaning of the original word to choose the most appropriate pronunciation.\n"
+        f"{formatted_options}\n"
+        "Please respond with only the selected option. Do not include any additional text or explanation."
+    )
+
+    client = ZhipuAI(api_key=ZHIPUAI_API_KEY)
+    # client = Ark(api_key=ARK_API_KEY)
+    response = client.chat.completions.create(
+        model="glm-4",
+        # model="ep-20240629142039-bt9sd",
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    answer = response.choices[0].message.content.strip()
+    print(f"answer: {answer}")
+
+    if answer in options:
+        return answer
+    else:
+        print("Error: The selected option was not provided in the list.")
+        return None
 
 
 def sort_translations_by_original_order(original_words: List[str], options: List[str]) -> List[str]:
@@ -103,13 +144,18 @@ def sort_translations_by_original_order(original_words: List[str], options: List
     print(f"options: {options}")
 
     prompt = (
-        "Given a list of original words and a list of options containing semantically related words or translations in a mixed order, "
-        "sort the options to match the semantic order of the original words. Return only the sorted list of options "
-        "separated by a hash (#) symbol. Do not include the original words list, any explanations, or additional content. "
+        "Given a list of original words and a list of options containing semantically related words "
+        "or translations in a mixed order, your task is to think through each original word one at a time, "
+        "and sort the options to match the semantic order of the original words. "
+        "For each original word, identify the corresponding option that best matches or translates it. "
+        "After considering all original words and finding their matches, "
+        "return only the sorted list of options separated by a hash (#) symbol. "
+        "Do not include the original words list, any explanations, or additional content.\n\n"
         "Here are the lists:\n\n"
-        "Original words:\n" + "\n".join(f"- {word}" for word in original_words) +
-        "\n\nOptions (mixed order):\n" +
-        "\n".join(f"- {option}" for option in options)
+        f"Original words: {', '.join(original_words)}\n"
+        f"Options (mixed order): {', '.join(options)}\n"
+        "Output format: wordA#wordB#wordC#...\n"
+        "return ONLY the hash-separated string as your response."
     )
 
     client = ZhipuAI(api_key=ZHIPUAI_API_KEY)

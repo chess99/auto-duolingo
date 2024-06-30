@@ -7,7 +7,9 @@ from auto_duolingo.question_answer import (
     solve_matching_pairs,
     solve_translate_sentence,
     solve_translate_word,
+    solve_word_pronunciation,
 )
+from auto_duolingo.SentencePairDB import SentencePairDB
 
 
 class DuolingoBot:
@@ -81,14 +83,21 @@ class DuolingoBot:
             self.ui_helper.click_continue_button()
 
         if question_type == QuestionType.TRANSLATE_SENTENCE:
+            self.ui_helper.click_hint_text_if_exists()
             self.ui_helper.reset_selected_answers()
             sentence = self.ui_helper.extract_origin_sentence()
             words = self.ui_helper.extract_alternative_options()
             bounds_to_click = solve_translate_sentence(sentence, words)
             self.ui_helper.perform_clicks_by_bounds(bounds_to_click)
+            if not bounds_to_click and words:
+                # If bounds_to_click is empty, submit directly to skip the question.
+                self.ui_helper.perform_clicks_by_bounds([words[0][1]])
             self.ui_helper.click_submit_button()
             result = self.ui_helper.get_answer_status()
-            if result["status"] == "incorrect":
+            if result.get("original_sentence") and result.get("correct_answer"):
+                SentencePairDB().insert_sentence_pair(
+                    result["original_sentence"], result["correct_answer"])
+            if bounds_to_click and result["status"] == "incorrect":
                 log_incorrect_answer(result)
             self.ui_helper.click_continue_button()
 
@@ -96,7 +105,7 @@ class DuolingoBot:
             self.ui_helper.deselect_selected_option()
             word = self.ui_helper.extract_flashcard_text()
             options = self.ui_helper.extract_option_list_of_word_translation()
-            bounds_to_click = solve_translate_word(word, options)
+            bounds_to_click = solve_word_pronunciation(word, options)
             self.ui_helper.perform_clicks_by_bounds(bounds_to_click)
             self.ui_helper.click_submit_button()
             self.ui_helper.click_continue_button()
@@ -105,7 +114,7 @@ class DuolingoBot:
             self.ui_helper.deselect_selected_option()
             word = self.ui_helper.extract_question_stem_text()
             options = self.ui_helper.extract_option_list_of_scaled_text()
-            bounds_to_click = solve_translate_word(word, options)
+            bounds_to_click = solve_word_pronunciation(word, options)
             self.ui_helper.perform_clicks_by_bounds(bounds_to_click)
             self.ui_helper.click_submit_button()
             self.ui_helper.click_continue_button()
