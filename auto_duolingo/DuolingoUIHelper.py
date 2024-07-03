@@ -42,6 +42,7 @@ class DuolingoUIHelper:
 
     def is_in_question_screen(self) -> bool:
         elements_to_check = [
+            "com.duolingo:id/challengeInstruction",
             "com.duolingo:id/submitButton",
             "com.duolingo:id/disableListenButton",
         ]

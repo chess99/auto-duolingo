@@ -9,7 +9,7 @@ from auto_duolingo.question_answer import (
     solve_translate_word,
     solve_word_pronunciation,
 )
-from auto_duolingo.SentencePairDB import SentencePairDB
+from db.SentencePairDB import SentencePairDB
 
 
 class DuolingoBot:

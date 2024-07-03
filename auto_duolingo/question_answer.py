@@ -1,7 +1,6 @@
 from enum import Enum
 from typing import Dict, List, Tuple
 
-from auto_duolingo.SentencePairDB import SentencePairDB
 from auto_duolingo.string_match import sort_substrings
 from auto_duolingo.translate_llm import (
     generate_sorted_sentence,
@@ -9,6 +8,7 @@ from auto_duolingo.translate_llm import (
     pick_semantically_matching_word,
     sort_translations_by_original_order,
 )
+from db.SentencePairDB import SentencePairDB
 
 
 class QuestionType(Enum):

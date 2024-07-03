@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from auto_duolingo.SentencePairDB import SentencePairDB
+from db.SentencePairDB import SentencePairDB
 
 
 class TestSentencePairDB(unittest.TestCase):
@@ -42,7 +42,7 @@ class TestSentencePairDB(unittest.TestCase):
     def test_find_nonexistent_sentence_pair(self):
         """Test querying for a sentence pair that does not exist."""
         result = self.db.find_sentence_pair("Nonexistent sentence")
-        self.assertEqual(result, []) 
+        self.assertEqual(result, [])
 
     def test_get_complementary_sentence(self):
         """Test retrieving the complementary sentence from a sentence pair."""
@@ -51,16 +51,19 @@ class TestSentencePairDB(unittest.TestCase):
         self.db.insert_sentence_pair(original_sentence, translated_sentence)
 
         # Test getting the translated sentence using the original sentence
-        result_translated = self.db.get_complementary_sentence(original_sentence)
+        result_translated = self.db.get_complementary_sentence(
+            original_sentence)
         self.assertEqual(result_translated, translated_sentence)
 
         # Test getting the original sentence using the translated sentence
-        result_original = self.db.get_complementary_sentence(translated_sentence)
+        result_original = self.db.get_complementary_sentence(
+            translated_sentence)
         self.assertEqual(result_original, original_sentence)
 
         # Test with a sentence that does not exist
-        result_nonexistent = self.db.get_complementary_sentence("Nonexistent sentence")
-        self.assertEqual(result_nonexistent, None)  
+        result_nonexistent = self.db.get_complementary_sentence(
+            "Nonexistent sentence")
+        self.assertEqual(result_nonexistent, None)
 
 
 if __name__ == '__main__':

@@ -9,11 +9,18 @@ class SentencePairDB:
         data_folder = os.path.join(os.path.dirname(__file__), '..', 'data')
         if not os.path.exists(data_folder):
             os.makedirs(data_folder)
-        db_path = os.path.join(data_folder, db_name)
+        if db_name == ":memory:":
+            db_path = ":memory:"
+        else:
+            db_path = os.path.join(data_folder, db_name)
         self.conn = sqlite3.connect(db_path)
-        self.create_table()
+        self.create_table_sentence_pairs()
 
-    def create_table(self):
+    def close(self):
+        """Close the database connection."""
+        self.conn.close()
+
+    def create_table_sentence_pairs(self):
         """Create the sentence_pairs table."""
         cursor = self.conn.cursor()
         cursor.execute('''
@@ -83,10 +90,6 @@ class SentencePairDB:
                 return original
 
         return None
-
-    def close(self):
-        """Close the database connection."""
-        self.conn.close()
 
 
 # Example usage
