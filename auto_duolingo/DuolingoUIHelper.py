@@ -284,13 +284,16 @@ ELEMENTS_OF_LISTENING_QUESTION = [
     "com.duolingo:id/continueButtonYellow"
 ]
 
-CONTINUE_BUTTON_GREEN = "com.duolingo:id/continueButtonGreen"
-CONTINUE_BUTTON_YELLOW = "com.duolingo:id/continueButtonYellow"
-CONTINUE_BUTTON_RED = "com.duolingo:id/continueButtonRed"
-CONTINUE_BUTTON_COACH = "com.duolingo:id/coachContinueButton"
+
 CONTINUE_BUTTON_IDS = [
-    CONTINUE_BUTTON_GREEN,
-    CONTINUE_BUTTON_YELLOW,
-    CONTINUE_BUTTON_RED,
-    CONTINUE_BUTTON_COACH,
+    "com.duolingo:id/continueButtonGreen",
+    "com.duolingo:id/continueButtonYellow",
+    "com.duolingo:id/continueButtonRed",
+    "com.duolingo:id/coachContinueButton",
+    "com.duolingo:id/continueButtonView"  # "领取经验"
+    "com.duolingo:id/heartsNoThanks",  # 红心 "不，谢谢"
+    "com.duolingo:id/boostsDrawerNoThanksButton",  # 时间宝 "不，谢谢"
+    "com.duolingo:id/rampUpQuitEndSession"  # 时间宝 "退出"
+    "com.duolingo:id/sessionEndContinueButton",  # 单词配对乐 "继续"
+    "com.duolingo:id/matchMadnessStartChallenge",  # 单词配对乐 "开始 +40 经验"
 ]

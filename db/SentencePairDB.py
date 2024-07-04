@@ -27,7 +27,8 @@ class SentencePairDB:
         CREATE TABLE IF NOT EXISTS sentence_pairs (
             id INTEGER PRIMARY KEY,
             original_sentence TEXT NOT NULL,
-            translated_sentence TEXT NOT NULL
+            translated_sentence TEXT NOT NULL,
+            source TEXT
         )
         ''')
         cursor.execute(
@@ -36,46 +37,54 @@ class SentencePairDB:
             'CREATE INDEX IF NOT EXISTS idx_translated ON sentence_pairs(translated_sentence)')
         self.conn.commit()
 
-    def insert_sentence_pair(self, original_sentence, translated_sentence):
-        """Insert a new sentence pair into the database if it doesn't already exist."""
+    def insert_sentence_pair(self, original_sentence: str, translated_sentence: str, source: str = "") -> None:
+        """Insert a new sentence pair into the database if it doesn't already exist, or update if source is 'incorrect_source'."""
+
+        # Prevent insertion of empty sentence pairs
+        if not original_sentence.strip() or not translated_sentence.strip():
+            print("Cannot insert empty sentence pairs.")
+            return
+
         cursor = self.conn.cursor()
+
         # Check if the sentence pair already exists
         query = '''
-        SELECT COUNT(*) 
+        SELECT id 
         FROM sentence_pairs 
         WHERE original_sentence = ? OR translated_sentence = ?
         '''
-        cursor.execute(query, (original_sentence, original_sentence))
-        if cursor.fetchone()[0] == 0:  # If the count is 0, the pair does not exist
-            cursor.execute('INSERT INTO sentence_pairs (original_sentence, translated_sentence) VALUES (?, ?)',
-                           (original_sentence, translated_sentence))
-            self.conn.commit()
-        else:
-            print("Sentence pair already exists in the database.")
+        cursor.execute(query, (original_sentence, translated_sentence))
+        result = cursor.fetchone()
 
-    def insert_sentence_pair_2(self, original_sentence, translated_sentence):
-        """Insert a new sentence pair into the database."""
-        cursor = self.conn.cursor()
-        cursor.execute('INSERT INTO sentence_pairs (original_sentence, translated_sentence) VALUES (?, ?)',
-                       (original_sentence, translated_sentence))
+        if result is None:  # If the pair does not exist, insert it
+            cursor.execute('INSERT INTO sentence_pairs (original_sentence, translated_sentence, source) VALUES (?, ?, ?)',
+                           (original_sentence, translated_sentence, source))
+        else:
+            # If the pair exists and source is 'incorrect_answer', update the entry
+            if source == 'incorrect_answer':
+                update_query = '''
+                UPDATE sentence_pairs
+                SET original_sentence = ?, translated_sentence = ?, source = ?
+                WHERE id = ?
+                '''
+                cursor.execute(update_query, (original_sentence,
+                               translated_sentence, source, result[0]))
+            else:
+                print("Sentence pair already exists in the database.")
+
         self.conn.commit()
 
     def find_sentence_pair(self, query_sentence: str) -> List[Tuple[str, str]]:
         """Find a sentence pair by searching both original and translated sentences."""
         cursor = self.conn.cursor()
         query = '''
-        SELECT original_sentence, translated_sentence 
+        SELECT original_sentence, translated_sentence
         FROM sentence_pairs 
         WHERE original_sentence LIKE ? OR translated_sentence LIKE ?
         '''
-        cursor.execute(query, ('%' + query_sentence +
-                       '%', '%' + query_sentence + '%'))
-        results = cursor.fetchall()
-
-        if results:
-            return results
-        else:
-            return []
+        search_term = f'%{query_sentence}%'
+        cursor.execute(query, (search_term, search_term))
+        return cursor.fetchall()
 
     def get_complementary_sentence(self, query_sentence: str) -> Optional[str]:
         """Get the sentence from the pair that is not the query_sentence."""
@@ -90,6 +99,16 @@ class SentencePairDB:
                 return original
 
         return None
+
+    def fetch_all_sentence_pairs(self) -> List[Tuple[str, str, str, int]]:
+        """Fetch all sentence pairs from the database."""
+        cursor = self.conn.cursor()
+        query = '''
+        SELECT original_sentence, translated_sentence, source, id
+        FROM sentence_pairs
+        '''
+        cursor.execute(query)
+        return cursor.fetchall()
 
 
 # Example usage

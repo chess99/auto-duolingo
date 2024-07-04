@@ -1,23 +1,9 @@
+import re
+
+
 def sort_substrings(sentence, substrings):
-    """
-    Sorts and filters substrings found in a given sentence.
+    sentence = re.sub(r'[^\w\s]', '', sentence)
 
-    This function searches for each substring in `substrings` within the `sentence`.
-    It then sorts these substrings by their first occurrence in the sentence and filters
-    out overlapping substrings, keeping only the first non-overlapping instance of each
-    found substring.
-
-    Parameters:
-    - sentence (str): The sentence to search within.
-    - substrings (list of str): A list of substrings to search for in the sentence.
-
-    Returns:
-    - tuple: A tuple containing two elements:
-        - A list of non-overlapping substrings found in the sentence, sorted by their
-          first occurrence.
-        - The remaining part of the sentence after removing the found, non-overlapping
-          substrings.
-    """
     found_substrings = []
     for sub in substrings:
         if sub == '':  # Skip empty strings to prevent infinite loop
@@ -52,7 +38,7 @@ def sort_substrings(sentence, substrings):
 if __name__ == "__main__":
     # Example usage
     substrings = ['を', '細かく', 'で', 'ください', '大豆', '刻ん', 'じゃがいも']
-    sentence = "じゃがいもを細かく刻んでください"
+    sentence = "じゃがいもを細かく刻んでください。"
     sorted_substrings, unmatched = sort_substrings(sentence, substrings)
     print("Sorted Substrings:", sorted_substrings)
     print("Unmatched Part:", unmatched)

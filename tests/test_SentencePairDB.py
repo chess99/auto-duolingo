@@ -28,6 +28,45 @@ class TestSentencePairDB(unittest.TestCase):
         if os.path.exists(self.test_db_path):
             os.remove(self.test_db_path)
 
+    def test_insert_new_sentence_pair(self):
+        """Test inserting a new sentence pair."""
+        original = "Hello, world!"
+        translated = "こんにちは、世界！"
+        self.db.insert_sentence_pair(original, translated)
+        # Assuming there's a method to fetch a sentence pair by original sentence
+        result = self.db.get_complementary_sentence(original)
+        self.assertEqual(translated, result)
+
+    def test_insert_existing_sentence_pair_no_update(self):
+        """Test inserting an existing sentence pair without update."""
+        original = "Good morning!"
+        translated = "おはようございます！"
+        self.db.insert_sentence_pair(original, translated)
+        # Attempt to insert the same pair again
+        self.db.insert_sentence_pair(original, translated)
+        # Verify it does not duplicate
+        result = self.db.fetch_all_sentence_pairs()
+        self.assertEqual(1, len(result))
+
+    def test_insert_existing_sentence_pair_with_update(self):
+        """Test updating an existing sentence pair with 'incorrect_answer' source."""
+        original = "Good night!"
+        translated = "おやすみなさい！"
+        self.db.insert_sentence_pair(original, translated)
+        # Insert with 'incorrect_answer' to trigger update
+        updated_translated = "こんばんは！"
+        self.db.insert_sentence_pair(
+            original, updated_translated, "incorrect_answer")
+        result = self.db.get_complementary_sentence(original)
+        self.assertEqual(updated_translated, result)
+
+    def test_insert_empty_strings(self):
+        """Test inserting empty strings."""
+        self.db.insert_sentence_pair("", "")
+        result = self.db.fetch_all_sentence_pairs()
+        self.assertEqual(
+            0, len(result), "Should not insert empty sentence pairs")
+
     def test_insert_and_find_sentence_pair(self):
         """Test inserting a sentence pair and then finding it."""
         original_sentence = "This is a test sentence."
