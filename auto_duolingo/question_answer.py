@@ -9,6 +9,7 @@ from auto_duolingo.translate_llm import (
     sort_translations_by_original_order,
 )
 from db.SentencePairDB import SentencePairDB
+from db.WordPairsDB import WordPairsDB
 
 
 class QuestionType(Enum):
@@ -27,6 +28,19 @@ class QuestionType(Enum):
     CHOOSE_CORRECT_CHARACTER = 7
 
 
+def map_options_to_bounds(sorted_options, options_with_bounds):
+    options_with_bounds_dicts = [{'option': option, 'bounds': bounds,
+                                  'processed': False} for option, bounds in options_with_bounds]
+    bounds_to_click = []
+    for option in sorted_options:
+        for option_dict in options_with_bounds_dicts:
+            if option_dict['option'] == option and not option_dict['processed']:
+                bounds_to_click.append(option_dict['bounds'])
+                option_dict['processed'] = True  # Mark as processed
+                break  # Move to the next word in sorted_options
+    return bounds_to_click
+
+
 def solve_translate_sentence(sentence: str, options_with_bounds: List[Tuple[str, Dict[str, int]]]):
     db_instance = SentencePairDB()
     translation = db_instance.get_complementary_sentence(sentence)
@@ -34,7 +48,7 @@ def solve_translate_sentence(sentence: str, options_with_bounds: List[Tuple[str,
     if translation is not None:
         print(f"Translation found in the database: {translation}")
         sorted_substrings, unmatched = sort_substrings(
-            translation,  [substring for substring, _ in options_with_bounds])
+            translation, [substring for substring, _ in options_with_bounds])
 
     if translation is None:
         sorted_substrings = generate_sorted_sentence(
@@ -42,18 +56,8 @@ def solve_translate_sentence(sentence: str, options_with_bounds: List[Tuple[str,
 
     print(f"sorted_substrings: {sorted_substrings}")
 
-    # Convert list of tuples to a list of dictionaries to keep track of processed words
-    options_with_bounds_dicts = [{'substring': substring, 'bounds': bounds,
-                                  'processed': False} for substring, bounds in options_with_bounds]
-
-    # Collect bounds in the order they appear in sorted_boxes
-    bounds_to_click = []
-    for substring in sorted_substrings:
-        for option_dict in options_with_bounds_dicts:
-            if option_dict['substring'] == substring and not option_dict['processed']:
-                bounds_to_click.append(option_dict['bounds'])
-                option_dict['processed'] = True  # Mark as processed
-                break  # Move to the next word in sorted_boxes
+    bounds_to_click = map_options_to_bounds(
+        sorted_substrings, options_with_bounds)
 
     return bounds_to_click
 
@@ -92,26 +96,64 @@ def solve_word_pronunciation(word: str, options_with_bounds: List[Tuple[str, Dic
     return bounds_to_click
 
 
+def find_db_matches(original_words, translations):
+    db_instance = WordPairsDB()
+    db_matches = {}
+    for word in original_words:
+        related_words = db_instance.query_related_words(word)
+        for related_word in related_words:
+            if related_word in translations:
+                db_matches[word] = related_word
+                break
+    db_instance.close()
+    return db_matches
+
+
 def solve_matching_pairs(words_with_bounds, options_with_bounds):
     original_words = [word for word, _ in words_with_bounds]
     translations = [option for option, _ in options_with_bounds]
 
-    # Assuming sort_translations_by_original_order is correctly implemented and available
-    sorted_translations = sort_translations_by_original_order(
-        original_words, translations)
+    db_matches = find_db_matches(original_words, translations)
+    print(f"db_matches: {db_matches}")
 
-    # Map sorted translations back to their bounds
-    translation_to_bounds = {
-        option: bounds for option, bounds in options_with_bounds}
-    sorted_translation_bounds = [
-        translation_to_bounds[translation] for translation in sorted_translations]
+    # Initialize placeholders
+    sorted_translations = [None] * len(original_words)
+    unmatched_indices = []
+    unmatched_words = []
+    matched_translations = set()
 
-    # Construct bounds_to_click in the specified order: original word - corresponding translation - and so on
+    # Attempt to match using db_matches
+    for i, word in enumerate(original_words):
+        if word in db_matches:
+            sorted_translations[i] = db_matches[word]
+            matched_translations.add(db_matches[word])
+        else:
+            unmatched_indices.append(i)
+            unmatched_words.append(word)
+
+    # Filter translations to exclude those that have been matched
+    unmatched_translations = [t for t in translations if t not in matched_translations]
+
+    if unmatched_words:
+        # Use sort_translations_by_original_order for unmatched words
+        sorted_unmatched_translations = sort_translations_by_original_order(
+            unmatched_words, unmatched_translations)
+
+        # Merge db_matches and sort_translations_by_original_order results
+        for index, translation in zip(unmatched_indices, sorted_unmatched_translations):
+            sorted_translations[index] = translation
+
+    # Use map_options_to_bounds for sorted translations
+    sorted_translation_bounds = map_options_to_bounds(
+        sorted_translations, options_with_bounds)
+
+    # Directly map original words to their bounds
+    original_word_bounds = [bounds for _, bounds in words_with_bounds]
+
+    # Interleave original_word_bounds and sorted_translation_bounds
     bounds_to_click = []
-    for word_bounds in words_with_bounds:
-        bounds_to_click.append(word_bounds[1])  # Add original word bounds
-        translation_index = original_words.index(word_bounds[0])
-        # Add corresponding translation bounds
-        bounds_to_click.append(sorted_translation_bounds[translation_index])
+    for original_bound, translation_bound in zip(original_word_bounds, sorted_translation_bounds):
+        bounds_to_click.append(original_bound)
+        bounds_to_click.append(translation_bound)
 
     return bounds_to_click
