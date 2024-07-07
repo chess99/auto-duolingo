@@ -19,7 +19,7 @@ class SentencePairDB:
             db_path = os.path.join(data_folder, db_name)
         self.conn = sqlite3.connect(db_path)
         self.create_table_sentence_pairs()
-        
+
     def __del__(self):
         self.close()
 
@@ -44,21 +44,22 @@ class SentencePairDB:
             'CREATE INDEX IF NOT EXISTS idx_translated ON sentence_pairs(translated_sentence)')
         self.conn.commit()
 
-    def insert_sentence_pair(self, original_sentence: str, translated_sentence: str, source: str = "") -> None:
-        """Insert a new sentence pair into the database if it doesn't already exist, or update if source is 'incorrect_source'."""
+    def insert_sentence_pair(self, original_sentence: str, translated_sentence: str, source: str = "") -> int:
+        """Insert a new sentence pair into the database if it doesn't already exist, or update if source is 'incorrect_source'. Returns the number of successful inserts/updates."""
 
         # Prevent insertion of empty sentence pairs
         if not original_sentence.strip() or not translated_sentence.strip():
             print("Cannot insert empty sentence pairs.")
-            return
+            return 0
 
         cursor = self.conn.cursor()
+        success_count = 0
 
         # Check if the sentence pair already exists
         query = '''
         SELECT id 
         FROM sentence_pairs 
-        WHERE original_sentence = ? OR translated_sentence = ?
+        WHERE original_sentence = ? AND translated_sentence = ?
         '''
         cursor.execute(query, (original_sentence, translated_sentence))
         result = cursor.fetchone()
@@ -66,6 +67,7 @@ class SentencePairDB:
         if result is None:  # If the pair does not exist, insert it
             cursor.execute('INSERT INTO sentence_pairs (original_sentence, translated_sentence, source) VALUES (?, ?, ?)',
                            (original_sentence, translated_sentence, source))
+            success_count = 1
         else:
             # If the pair exists and source is 'incorrect_answer', update the entry
             if source == 'incorrect_answer':
@@ -76,10 +78,13 @@ class SentencePairDB:
                 '''
                 cursor.execute(update_query, (original_sentence,
                                translated_sentence, source, result[0]))
+                success_count = 1
             else:
-                print("Sentence pair already exists in the database.")
+                # print("Sentence pair already exists in the database.")
+                pass
 
         self.conn.commit()
+        return success_count
 
     def find_sentence_pair(self, query_sentence: str) -> List[Tuple[str, str]]:
         """Find a sentence pair by searching both original and translated sentences."""

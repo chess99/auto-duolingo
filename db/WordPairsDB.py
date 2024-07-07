@@ -50,7 +50,10 @@ class WordPairsDB:
         ''')
         self.conn.commit()
 
-    def insert_word_group(self, words: List[str]) -> None:
+    def insert_word_group(self, words: List[str]) -> int:
+        # Initialize the counter
+        successful_inserts = 0
+
         # Check which words already exist in the database
         placeholders = ', '.join('?' for _ in words)
         self.cursor.execute(
@@ -63,6 +66,8 @@ class WordPairsDB:
             for word in words:
                 self.cursor.execute(
                     'INSERT INTO word_pairs (word, group_id) VALUES (?, ?)', (word, group_id))
+                successful_inserts += 1  # Increment the counter
+                print(f"Inserted '{word}' with group_id '{group_id}'.")
         else:
             # If some words exist, use the group_id of the first found word for all new words
             group_id = next(iter(existing_words.values()))
@@ -70,13 +75,18 @@ class WordPairsDB:
                 if word not in existing_words:
                     self.cursor.execute(
                         'INSERT INTO word_pairs (word, group_id) VALUES (?, ?)', (word, group_id))
+                    successful_inserts += 1  # Increment the counter
+                    print(f"Inserted '{word}' with group_id '{group_id}'.")
                 else:
                     # If the word exists but has a different group_id, update it
                     if existing_words[word] != group_id:
                         self.cursor.execute(
                             'UPDATE word_pairs SET group_id = ? WHERE word = ?', (group_id, word))
+                        successful_inserts += 1  # Increment the counter for updates as well
+                        print(f"Updated '{word}' to group_id '{group_id}'.")
 
         self.conn.commit()
+        return successful_inserts  # Return the count of successful inserts/updates
 
     def query_related_words(self, word: str) -> List[str]:
         self.cursor.execute(
