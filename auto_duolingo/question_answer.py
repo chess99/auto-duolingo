@@ -63,58 +63,38 @@ def solve_translate_sentence(sentence: str, options_with_bounds: List[Tuple[str,
 
 
 def solve_translate_word(word: str, options_with_bounds: List[Tuple[str, Dict[str, int]]]):
-    # Extract options from options_with_bounds
     options = [option for option, _ in options_with_bounds]
 
-    # Use the tool function to pick the correct translation
-    correct_translation = llm_pick_semantically_matching_word(word, options)
+    db_matches = WordPairsDB().find_matches([word], options)
+    print(f"db_matches: {db_matches}")
 
-    # Find the bounds for the correct translation
-    bounds_to_click = []
-    for option, bounds in options_with_bounds:
-        if option == correct_translation:
-            bounds_to_click.append(bounds)
-            break
+    translation = db_matches.get(word)
+    if not translation:
+        translation = llm_pick_semantically_matching_word(word, options)
 
+    bounds_to_click = map_options_to_bounds([translation], options_with_bounds)
     return bounds_to_click
 
 
 def solve_word_pronunciation(word: str, options_with_bounds: List[Tuple[str, Dict[str, int]]]):
-    # Extract options from options_with_bounds
     options = [option for option, _ in options_with_bounds]
 
-    # Use the tool function to pick the correct pronunciation
-    correct_pronunciation = llm_pick_corresponding_pronunciation(word, options)
+    db_matches = WordPairsDB().find_matches([word], options)
+    print(f"db_matches: {db_matches}")
 
-    # Find the bounds for the correct pronunciation
-    bounds_to_click = []
-    for option, bounds in options_with_bounds:
-        if option == correct_pronunciation:
-            bounds_to_click.append(bounds)
-            break
+    translation = db_matches.get(word)
+    if not translation:
+        translation = llm_pick_corresponding_pronunciation(word, options)
 
+    bounds_to_click = map_options_to_bounds([translation], options_with_bounds)
     return bounds_to_click
-
-
-def find_db_matches(original_words: List[str], translations: List[str]):
-    db_instance = WordPairsDB()
-    db_matches = {}
-    for word in original_words:
-        related_words = db_instance.query_related_words(word)
-        for related_word in related_words:
-            if related_word in translations:
-                db_matches[word] = related_word
-                break
-        db_matches[word] = None
-    db_instance.close()
-    return db_matches
 
 
 def solve_matching_pairs(words_with_bounds, options_with_bounds):
     original_words = [word for word, _ in words_with_bounds]
     option_words = [option for option, _ in options_with_bounds]
 
-    db_matches = find_db_matches(original_words, option_words)
+    db_matches = WordPairsDB().find_matches(original_words, option_words)
     print(f"db_matches: {db_matches}")
 
     unmatched_words = [word for word in db_matches if db_matches[word] is None]
@@ -140,56 +120,5 @@ def solve_matching_pairs(words_with_bounds, options_with_bounds):
 
     bounds_to_click = map_options_to_bounds(
         all_words, words_with_bounds + options_with_bounds)
-
-    return bounds_to_click
-
-
-def solve_matching_pairs2(words_with_bounds, options_with_bounds):
-    original_words = [word for word, _ in words_with_bounds]
-    translations = [option for option, _ in options_with_bounds]
-
-    db_matches = find_db_matches(original_words, translations)
-    print(f"db_matches: {db_matches}")
-
-    # Initialize placeholders
-    sorted_translations = [None] * len(original_words)
-    unmatched_indices = []
-    unmatched_words = []
-    matched_translations = set()
-
-    # Attempt to match using db_matches
-    for i, word in enumerate(original_words):
-        if word in db_matches:
-            sorted_translations[i] = db_matches[word]
-            matched_translations.add(db_matches[word])
-        else:
-            unmatched_indices.append(i)
-            unmatched_words.append(word)
-
-    # Filter translations to exclude those that have been matched
-    unmatched_translations = [
-        t for t in translations if t not in matched_translations]
-
-    if unmatched_words:
-        # Use sort_translations_by_original_order for unmatched words
-        sorted_unmatched_translations = llm_sort_translations_by_original_order(
-            unmatched_words, unmatched_translations)
-
-        # Merge db_matches and sort_translations_by_original_order results
-        for index, translation in zip(unmatched_indices, sorted_unmatched_translations):
-            sorted_translations[index] = translation
-
-    # Use map_options_to_bounds for sorted translations
-    sorted_translation_bounds = map_options_to_bounds(
-        sorted_translations, options_with_bounds)
-
-    # Directly map original words to their bounds
-    original_word_bounds = [bounds for _, bounds in words_with_bounds]
-
-    # Interleave original_word_bounds and sorted_translation_bounds
-    bounds_to_click = []
-    for original_bound, translation_bound in zip(original_word_bounds, sorted_translation_bounds):
-        bounds_to_click.append(original_bound)
-        bounds_to_click.append(translation_bound)
 
     return bounds_to_click

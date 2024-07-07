@@ -32,6 +32,9 @@ class WordPairsDB:
         self.conn = sqlite3.connect(db_path)
         self.create_table_word_pairs()
 
+    def __del__(self):
+        self.close()
+
     def close(self):
         self.conn.close()
 
@@ -85,3 +88,17 @@ class WordPairsDB:
                 'SELECT word FROM word_pairs WHERE group_id = ?', (group_id,))
             return [row[0] for row in self.cursor.fetchall()]
         return []
+
+    def find_matches(self, original_words: List[str], options: List[str]):
+        matches = {}
+        for word in original_words:
+            related_words = self.query_related_words(word)
+            match_found = False
+            for related_word in related_words:
+                if related_word in options:
+                    matches[word] = related_word
+                    match_found = True
+                    break
+            if not match_found:
+                matches[word] = None
+        return matches

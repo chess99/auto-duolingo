@@ -3,6 +3,7 @@ import re
 import sqlite3
 from typing import List, Optional, Tuple
 
+# pylint: disable=no-name-in-module
 from jellyfish import levenshtein_distance
 
 
@@ -18,6 +19,9 @@ class SentencePairDB:
             db_path = os.path.join(data_folder, db_name)
         self.conn = sqlite3.connect(db_path)
         self.create_table_sentence_pairs()
+        
+    def __del__(self):
+        self.close()
 
     def close(self):
         """Close the database connection."""

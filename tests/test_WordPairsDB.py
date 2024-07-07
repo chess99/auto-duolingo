@@ -50,6 +50,36 @@ class TestWordPairsDB(unittest.TestCase):
         self.assertIn('newword', result)
         self.assertEqual(len(result), 4)
 
+    def test_find_matches_multiple_words(self):
+        # Setup: Insert word groups into the database
+        self.db.insert_word_group(['apple', 'banana'])
+        self.db.insert_word_group(['banana', 'cantaloupe'])
+        self.db.insert_word_group(['date', 'elderberry'])
+
+        # Define options
+        options = ['apple', 'banana', 'cantaloupe',  'elderberry']
+
+        # Action: Find matches for multiple words with options
+        matches = self.db.find_matches(['banana', 'date'], options)
+
+        # Assertion: Check if the matches dictionary is correct
+        expected_matches = {'banana': 'apple', 'date': 'elderberry'}
+        self.assertEqual(matches, expected_matches)
+
+    def test_find_matches_with_nonexistent_word(self):
+        # Setup: Insert word groups into the database
+        self.db.insert_word_group(['apple', 'banana'])
+
+        # Define options
+        options = ['apple', 'banana']
+
+        # Action: Find matches including a nonexistent word with options
+        matches = self.db.find_matches(['banana', 'nonexistent'], options)
+
+        # Assertion: Check if the matches dictionary is correct, including handling of the nonexistent word
+        expected_matches = {'banana': 'apple', 'nonexistent': None}
+        self.assertEqual(matches, expected_matches)
+
 
 if __name__ == '__main__':
     unittest.main()

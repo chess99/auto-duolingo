@@ -38,7 +38,7 @@ class DuolingoUIHelper:
         return any(self.d(resourceId=element).exists for element in ELEMENTS_OF_UNIT_SELECTION)
 
     def select_unit(self):
-        self.click_elements_sequentially(ELEMENTS_OF_UNIT_SELECTION)
+        self.click_element_if_exists(ELEMENTS_OF_UNIT_SELECTION)
 
     def is_in_question_screen(self) -> bool:
         elements_to_check = [
@@ -73,18 +73,17 @@ class DuolingoUIHelper:
         else:
             return ""
 
-    def click_element_if_exists(self, resource_id: str) -> bool:
-        element = self.d(resourceId=resource_id)
-        if element.exists:
-            element.click()
-            time.sleep(0.1)
-            return True
-        else:
-            return False
+    def click_element_if_exists(self, resource_ids: str) -> bool:
+        for resource_id in resource_ids:
+            element = self.d(resourceId=resource_id)
+            if element.exists:
+                element.click()
+                break
+        time.sleep(0.1)
 
     def click_hint_text_if_exists(self) -> bool:
         """ 轻点此处查看词库 """
-        return self.click_element_if_exists("com.duolingo:id/hintText")
+        return self.click_element_if_exists(["com.duolingo:id/hintText"])
 
     def extract_origin_sentence(self) -> str:
         sentence_resource_id = "com.duolingo:id/hintablePrompt"
@@ -277,6 +276,7 @@ ELEMENTS_OF_UNIT_SELECTION = [
     "com.duolingo:id/learnButton",
     "com.duolingo:id/startButton",
     "com.duolingo:id/primaryButton",
+    "com.duolingo:id/xpBoostLearnButtonType",  # "开始⚡20经验"
 ]
 
 ELEMENTS_OF_LISTENING_QUESTION = [
