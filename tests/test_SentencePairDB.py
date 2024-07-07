@@ -104,6 +104,26 @@ class TestSentencePairDB(unittest.TestCase):
             "Nonexistent sentence")
         self.assertEqual(result_nonexistent, None)
 
+    def test_get_exact_complementary_sentence(self):
+        self.db.insert_sentence_pair("この工場は立ち入り禁止です。", "这个工厂禁止入内。")
+        self.db.insert_sentence_pair("立ち入り禁止。", "禁止入内。")
+        self.assertEqual(self.db.get_complementary_sentence("立ち入り禁止"), "禁止入内。")
+
+    def test_get_complementary_sentence_with_punctuation_difference(self):
+        """Test that sentences differing only by punctuation are considered a match."""
+        self.db.insert_sentence_pair("Hello, world!", "你好，世界！")
+        result = self.db.get_complementary_sentence("Hello, world")
+        self.assertEqual(
+            result, "你好，世界！", "Failed to match sentences differing only by punctuation.")
+
+    def test_get_complementary_sentence_with_more_than_punctuation_difference(self):
+        """Test that sentences differing by more than punctuation are not considered a match."""
+        self.db.insert_sentence_pair("Good morning, everyone!", "大家早上好！")
+        # Intentionally altering the query to differ by more than just punctuation
+        result = self.db.get_complementary_sentence("Good morning")
+        self.assertIsNone(
+            result, "Incorrectly matched sentences differing by more than punctuation.")
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,6 +1,9 @@
 import os
+import re
 import sqlite3
 from typing import List, Optional, Tuple
+
+from jellyfish import levenshtein_distance
 
 
 class SentencePairDB:
@@ -87,18 +90,44 @@ class SentencePairDB:
         return cursor.fetchall()
 
     def get_complementary_sentence(self, query_sentence: str) -> Optional[str]:
-        """Get the sentence from the pair that is not the query_sentence."""
         results = self.find_sentence_pair(query_sentence)
-        if not results:  # Check if results is an empty list
-            return None  # Return None if no matching sentence pair is found
+        print(f"results: {results}")
+        if not results:
+            return None
+
+        lowest_distance = float('inf')
+        # Holds the best matching original and translated sentences
+        best_match_pair = (None, None)
 
         for original, translated in results:
-            if query_sentence in original:
-                return translated
-            elif query_sentence in translated:
-                return original
+            # Calculate distance from the query to both the original and translated sentences
+            distance_original = levenshtein_distance(query_sentence, original)
+            distance_translated = levenshtein_distance(
+                query_sentence, translated)
 
-        return None
+            # Update if a closer match is found
+            if distance_original < lowest_distance:
+                lowest_distance = distance_original
+                best_match_pair = (original, translated)
+            if distance_translated < lowest_distance:
+                lowest_distance = distance_translated
+                best_match_pair = (translated, original)
+
+        # Remove punctuation from both sentences for comparison
+
+        def remove_punctuation(s: str) -> str:
+            return re.sub(r'[^\w\s]', '', s)
+
+        query_no_punct = remove_punctuation(query_sentence)
+        best_match_no_punct = remove_punctuation(best_match_pair[0])
+        print(f"query_no_punct: {query_no_punct}")
+        print(f"best_match_no_punct: {best_match_no_punct}")
+
+        # Check if the difference is only in punctuation
+        if query_no_punct != best_match_no_punct:
+            return None
+
+        return best_match_pair[1]
 
     def fetch_all_sentence_pairs(self) -> List[Tuple[str, str, str, int]]:
         """Fetch all sentence pairs from the database."""

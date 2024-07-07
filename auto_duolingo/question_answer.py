@@ -3,10 +3,10 @@ from typing import Dict, List, Tuple
 
 from auto_duolingo.string_match import sort_substrings
 from auto_duolingo.translate_llm import (
-    generate_sorted_sentence,
-    pick_corresponding_pronunciation,
-    pick_semantically_matching_word,
-    sort_translations_by_original_order,
+    llm_generate_sorted_sentence,
+    llm_pick_corresponding_pronunciation,
+    llm_pick_semantically_matching_word,
+    llm_sort_translations_by_original_order,
 )
 from db.SentencePairDB import SentencePairDB
 from db.WordPairsDB import WordPairsDB
@@ -51,7 +51,7 @@ def solve_translate_sentence(sentence: str, options_with_bounds: List[Tuple[str,
             translation, [substring for substring, _ in options_with_bounds])
 
     if translation is None:
-        sorted_substrings = generate_sorted_sentence(
+        sorted_substrings = llm_generate_sorted_sentence(
             sentence, [substring for substring, _ in options_with_bounds])
 
     print(f"sorted_substrings: {sorted_substrings}")
@@ -67,7 +67,7 @@ def solve_translate_word(word: str, options_with_bounds: List[Tuple[str, Dict[st
     options = [option for option, _ in options_with_bounds]
 
     # Use the tool function to pick the correct translation
-    correct_translation = pick_semantically_matching_word(word, options)
+    correct_translation = llm_pick_semantically_matching_word(word, options)
 
     # Find the bounds for the correct translation
     bounds_to_click = []
@@ -84,7 +84,7 @@ def solve_word_pronunciation(word: str, options_with_bounds: List[Tuple[str, Dic
     options = [option for option, _ in options_with_bounds]
 
     # Use the tool function to pick the correct pronunciation
-    correct_pronunciation = pick_corresponding_pronunciation(word, options)
+    correct_pronunciation = llm_pick_corresponding_pronunciation(word, options)
 
     # Find the bounds for the correct pronunciation
     bounds_to_click = []
@@ -96,7 +96,7 @@ def solve_word_pronunciation(word: str, options_with_bounds: List[Tuple[str, Dic
     return bounds_to_click
 
 
-def find_db_matches(original_words, translations):
+def find_db_matches(original_words: List[str], translations: List[str]):
     db_instance = WordPairsDB()
     db_matches = {}
     for word in original_words:
@@ -105,11 +105,46 @@ def find_db_matches(original_words, translations):
             if related_word in translations:
                 db_matches[word] = related_word
                 break
+        db_matches[word] = None
     db_instance.close()
     return db_matches
 
 
 def solve_matching_pairs(words_with_bounds, options_with_bounds):
+    original_words = [word for word, _ in words_with_bounds]
+    option_words = [option for option, _ in options_with_bounds]
+
+    db_matches = find_db_matches(original_words, option_words)
+    print(f"db_matches: {db_matches}")
+
+    unmatched_words = [word for word in db_matches if db_matches[word] is None]
+
+    # If unmatched_words length is 1, then we can directly determine the unmatched word in option_words
+    if len(unmatched_words) == 1:
+        for option in option_words:
+            if option not in db_matches.values():
+                db_matches[unmatched_words[0]] = option
+                unmatched_words = []
+                break
+
+    if unmatched_words:
+        sorted_translations = llm_sort_translations_by_original_order(
+            unmatched_words, [option for option in option_words if option not in db_matches.values()])
+        for word, translation in zip(unmatched_words, sorted_translations):
+            db_matches[word] = translation
+
+    all_words = []
+    for word, translation in db_matches.items():
+        all_words.append(word)
+        all_words.append(translation)
+
+    bounds_to_click = map_options_to_bounds(
+        all_words, words_with_bounds + options_with_bounds)
+
+    return bounds_to_click
+
+
+def solve_matching_pairs2(words_with_bounds, options_with_bounds):
     original_words = [word for word, _ in words_with_bounds]
     translations = [option for option, _ in options_with_bounds]
 
@@ -132,11 +167,12 @@ def solve_matching_pairs(words_with_bounds, options_with_bounds):
             unmatched_words.append(word)
 
     # Filter translations to exclude those that have been matched
-    unmatched_translations = [t for t in translations if t not in matched_translations]
+    unmatched_translations = [
+        t for t in translations if t not in matched_translations]
 
     if unmatched_words:
         # Use sort_translations_by_original_order for unmatched words
-        sorted_unmatched_translations = sort_translations_by_original_order(
+        sorted_unmatched_translations = llm_sort_translations_by_original_order(
             unmatched_words, unmatched_translations)
 
         # Merge db_matches and sort_translations_by_original_order results

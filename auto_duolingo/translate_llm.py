@@ -6,7 +6,7 @@ from zhipuai import ZhipuAI
 from config import ZHIPUAI_API_KEY
 
 
-def generate_sorted_sentence(original_sentence: str, substrings: List[str]) -> List[str]:
+def llm_generate_sorted_sentence(original_sentence: str, substrings: List[str]) -> List[str]:
     print(f"Original sentence: {original_sentence}")
     print(f"substrings: {substrings}")
 
@@ -75,7 +75,7 @@ def generate_sorted_sentence(original_sentence: str, substrings: List[str]) -> L
 # "Respond with only the selected option. Do not include any additional text or explanation."
 
 
-def pick_semantically_matching_word(original_word: str, options: List[str]) -> str:
+def llm_pick_semantically_matching_word(original_word: str, options: List[str]) -> str:
     print(f"Original word: {original_word}")
     print(f"Options: {options}")
 
@@ -105,7 +105,7 @@ def pick_semantically_matching_word(original_word: str, options: List[str]) -> s
         return None
 
 
-def pick_corresponding_pronunciation(original_word: str, options: List[str]) -> str:
+def llm_pick_corresponding_pronunciation(original_word: str, options: List[str]) -> str:
     print(f"Original word: {original_word}")
     print(f"Options: {options}")
 
@@ -139,7 +139,7 @@ def pick_corresponding_pronunciation(original_word: str, options: List[str]) -> 
         return None
 
 
-def sort_translations_by_original_order(original_words: List[str], options: List[str]) -> List[str]:
+def llm_sort_translations_by_original_order(original_words: List[str], options: List[str]) -> List[str]:
     print(f"original_words: {original_words}")
     print(f"options: {options}")
 
@@ -191,6 +191,6 @@ if __name__ == "__main__":
     words = [word for word, _ in boxes[:-1]]
 
     # 调用函数并打印结果
-    sorted_sentence = generate_sorted_sentence(original_sentence, words)
+    sorted_sentence = llm_generate_sorted_sentence(original_sentence, words)
     print(sorted_sentence)
     print(type(sorted_sentence))

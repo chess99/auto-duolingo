@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 
 from auto_duolingo.ocr_tesseract import ocr_on_single_box_tesseract
-from auto_duolingo.translate_llm import generate_sorted_sentence
+from auto_duolingo.translate_llm import llm_generate_sorted_sentence
 
 
 def detect_boxes_in_image(image_path: str) -> List[Tuple[int, int, int, int]]:
@@ -87,7 +87,7 @@ def process_image_and_sort_text(image_path: str) -> List[Tuple[str, Tuple[int, i
     words_to_sort = [word for word, _ in word_positions]
 
     # Sort words based on the original sentence
-    sorted_word_list = generate_sorted_sentence(
+    sorted_word_list = llm_generate_sorted_sentence(
         sentence_for_sorting, words_to_sort)
 
     # Associate sorted words with their original positions
