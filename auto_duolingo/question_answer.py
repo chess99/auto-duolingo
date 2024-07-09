@@ -103,6 +103,7 @@ def solve_matching_pairs(words_with_bounds, options_with_bounds):
     if len(unmatched_words) == 1:
         for option in option_words:
             if option not in db_matches.values():
+                print(f"Matched '{unmatched_words[0]}' with '{option}'.")
                 db_matches[unmatched_words[0]] = option
                 unmatched_words = []
                 break
@@ -112,6 +113,7 @@ def solve_matching_pairs(words_with_bounds, options_with_bounds):
             unmatched_words, [option for option in option_words if option not in db_matches.values()])
         for word, translation in zip(unmatched_words, sorted_translations):
             db_matches[word] = translation
+            print(f"Matched '{word}' with '{translation}'.")
 
     all_words = []
     for word, translation in db_matches.items():

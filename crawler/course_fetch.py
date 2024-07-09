@@ -33,8 +33,8 @@ def print_course_structure(file_path):
 # fmt: on
 
 
-def list_all_levels(file_path):
-    with open(file_path, 'r', encoding='utf-8') as file:
+def list_all_levels(course_json_file_path):
+    with open(course_json_file_path, 'r', encoding='utf-8') as file:
         data = json.load(file)
         currentCourse = data.get('currentCourse', {})
         pathSectioned = currentCourse.get('pathSectioned', [])
@@ -89,32 +89,45 @@ def generate_request_list(levels_list):
     return request_list
 
 
-def perform_requests(request_list):
+def perform_session_requests(request_list, sessions_directory=".temp/sessions/"):
     total_requests = len(request_list)
     print(f"Total requests: {total_requests}")
 
     current_request_index = 0
+    fetched_requests_count = 0  # Counter for fetched requests
     for params in request_list:
         current_request_index += 1
+        file_path = f"{sessions_directory}/{params['absoluteNodeIndex']}_{params['levelSessionIndex']}.json"
+
+        # Check if the file already exists
+        if os.path.exists(file_path):
+            print(f"File already exists. Skipping: {file_path}")
+            continue  # Skip to the next iteration
+
         print(f"Fetching ({current_request_index}/{total_requests}): {params}")
 
-        # Assuming fetch_session is a function that makes the actual request
-        response = fetch_session(params)
+        try:
+            # Assuming fetch_session is a function that makes the actual request
+            response = fetch_session(params)
 
-        os.makedirs('.temp/sessions', exist_ok=True)
-        file_path = f".temp/sessions/{params['absoluteNodeIndex']}_{params['levelSessionIndex']}.json"
-        with open(file_path, 'w') as file:
-            file.write(response.text)
+            os.makedirs(sessions_directory, exist_ok=True)
+            with open(file_path, 'w') as file:
+                file.write(response.text)
+            fetched_requests_count += 1  # Increment only on successful fetch
+        except Exception as e:
+            print(f"Error fetching session for params {params}: {e}")
+            continue  # Skip to the next iteration
 
-        if current_request_index % 20 == 0:
+        # Calculate long break based on fetched requests
+        if fetched_requests_count % 20 == 0:
             print("Taking a long break...")
-            time.sleep(60)  # Long break after every 20 fetches
+            time.sleep(60)  # Long break after every 20 successful fetches
 
         time.sleep(1)  # Short delay between requests
 
 
 if __name__ == "__main__":
-    file_path = ".temp/current_course.json"
-    levels_list = list_all_levels(file_path)
+    course_json_file_path = ".temp/current_course.json"
+    levels_list = list_all_levels(course_json_file_path)
     request_list = generate_request_list(levels_list)
-    perform_requests(request_list)
+    perform_session_requests(request_list)

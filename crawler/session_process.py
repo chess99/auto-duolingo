@@ -2,21 +2,12 @@ import json
 import os
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from enum import Enum
-
-from db.SentencePairDB import SentencePairDB
-from db.WordPairsDB import WordPairsDB
-
-
-class DataType(Enum):
-    WORD_PAIR = "word_pair"
-    SENTENCE_TRANSLATION = "sentence_translation"
 
 
 def process_assist(item):
     prompt = item['prompt']
     correct_choice = item['choices'][item['correctIndex']]
-    return {"type": DataType.WORD_PAIR, "data": [(prompt, correct_choice)]}
+    return {"type": "WORD_PAIR", "data": [(prompt, correct_choice)]}
 
 
 def process_listenTap(item):
@@ -28,27 +19,27 @@ def process_listenTap(item):
         # 'learning_language': metadata.get('learning_language'),
         # 'from_language': metadata.get('from_language')
     }
-    return {"type": DataType.SENTENCE_TRANSLATION, "data": [translation_data]}
+    return {"type": "SENTENCE_TRANSLATION", "data": [translation_data]}
 
 
 def process_characterMatch(item):
     pairs = item.get('pairs', [])
     extracted_tokens = [(pair.get('character'), pair.get(
         'transliteration')) for pair in pairs]
-    return {"type": DataType.WORD_PAIR, "data": extracted_tokens}
+    return {"type": "WORD_PAIR", "data": extracted_tokens}
 
 
 def process_match(item):
     pairs = item.get('pairs', [])
     extracted_tokens = [
         (pair.get('fromToken'), pair.get('learningToken')) for pair in pairs]
-    return {"type": DataType.WORD_PAIR, "data": extracted_tokens}
+    return {"type": "WORD_PAIR", "data": extracted_tokens}
 
 
 def process_characterIntro(item):
     prompt = item['prompt']
     correct_choice = item['choices'][item['correctIndex']]
-    return {"type": DataType.WORD_PAIR, "data": [(prompt, correct_choice)]}
+    return {"type": "WORD_PAIR", "data": [(prompt, correct_choice)]}
 
 
 def process_translate(item):
@@ -60,19 +51,19 @@ def process_translate(item):
         # # 'learning_language': metadata.get('learning_language'),
         # # 'from_language': metadata.get('from_language')
     }
-    return {"type": DataType.SENTENCE_TRANSLATION, "data": [translation_data]}
+    return {"type": "SENTENCE_TRANSLATION", "data": [translation_data]}
 
 
 def process_characterSelect(item):
     prompt = item['prompt']
     correct_choice = item['choices'][item['correctIndex']]['character']
-    return {"type": DataType.WORD_PAIR, "data": [(prompt, correct_choice)]}
+    return {"type": "WORD_PAIR", "data": [(prompt, correct_choice)]}
 
 
 def process_select(item):
     prompt = item['prompt']
     correct_choice = item['choices'][item['correctIndex']]['phrase']
-    return {"type": DataType.WORD_PAIR, "data": [(prompt, correct_choice)]}
+    return {"type": "WORD_PAIR", "data": [(prompt, correct_choice)]}
 
 
 def process_not_implemented(item):
@@ -145,6 +136,7 @@ def process_session_data_from_file(file_path):
 
 def process_all_sessions(directory_path):
     all_results = defaultdict(list)
+    files_found = False  # Flag to track if any files are found
 
     def process_file(file_path):
         print(f"Processing {file_path}")
@@ -156,10 +148,16 @@ def process_all_sessions(directory_path):
         for root, dirs, files in os.walk(directory_path):
             for file in files:
                 if file.endswith(".json"):
+                    files_found = True  # Set flag to True when a file is found
                     file_path = os.path.join(root, file)
                     # Submit the task for processing the file
                     future = executor.submit(process_file, file_path)
                     futures.append(future)
+
+        # If no files were found, print a warning in yellow
+        if not files_found:
+            print(
+                f"\033[93mWarning: No .json files found in the specified directory: {directory_path}\033[0m")
 
         # Collect results as tasks complete
         for future in as_completed(futures):
@@ -168,46 +166,13 @@ def process_all_sessions(directory_path):
                 all_results[result_type].extend(data_list)
 
     # Deduplicate word pairs before returning
-    if DataType.WORD_PAIR in all_results:
-        all_results[DataType.WORD_PAIR] = deduplicate_word_pairs(
-            all_results[DataType.WORD_PAIR])
+    if "WORD_PAIR" in all_results:
+        all_results["WORD_PAIR"] = deduplicate_word_pairs(
+            all_results["WORD_PAIR"])
 
     # Deduplicate sentence translations before returning
-    if DataType.SENTENCE_TRANSLATION in all_results:
-        all_results[DataType.SENTENCE_TRANSLATION] = deduplicate_sentence_translations(
-            all_results[DataType.SENTENCE_TRANSLATION])
+    if "SENTENCE_TRANSLATION" in all_results:
+        all_results["SENTENCE_TRANSLATION"] = deduplicate_sentence_translations(
+            all_results["SENTENCE_TRANSLATION"])
 
     return all_results
-
-
-def save_results_to_db(all_results):
-    word_pairs_db = WordPairsDB()
-    sentence_pair_db = SentencePairDB()
-    result_summary = {}  # Dictionary to store the summary of results
-
-    for result_type, data_list in all_results.items():
-        success_count = 0  # Initialize success count for each result type
-
-        if result_type == DataType.WORD_PAIR:
-            for data in data_list:
-                prompt, correct_choice = data
-                success_count += word_pairs_db.insert_word_group(
-                    [prompt, correct_choice])
-        elif result_type == DataType.SENTENCE_TRANSLATION:
-            for data in data_list:
-                success_count += sentence_pair_db.insert_sentence_pair(
-                    data['sentence'], data['translation'], data.get('source', ""))
-
-        # Store the result summary instead of printing immediately
-        result_summary[result_type] = (len(data_list), success_count)
-
-    # After all types are processed, print the summary for each result type
-    for result_type, (total, success) in result_summary.items():
-        print(f"{result_type}: {total} items")
-        print(f"{result_type}: {success} successfully inserted/updated")
-
-
-if __name__ == "__main__":
-    sessions_directory = ".temp/sessions/"
-    all_results = process_all_sessions(sessions_directory)
-    save_results_to_db(all_results)

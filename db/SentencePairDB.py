@@ -100,7 +100,6 @@ class SentencePairDB:
 
     def get_complementary_sentence(self, query_sentence: str) -> Optional[str]:
         results = self.find_sentence_pair(query_sentence)
-        print(f"results: {results}")
         if not results:
             return None
 
