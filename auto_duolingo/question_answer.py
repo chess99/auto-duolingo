@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Dict, List, Tuple
 
-from auto_duolingo.string_match import sort_substrings
+from auto_duolingo.string_util import sort_substrings
 from auto_duolingo.translate_llm import (
     llm_generate_sorted_sentence,
     llm_pick_corresponding_pronunciation,

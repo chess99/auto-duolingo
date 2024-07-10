@@ -8,6 +8,12 @@ To scrape course data and save it to the local cache file, run the following com
 
 ```shell
 python -m crawler.scrape
+
+# To run the script with the session data reset option
+python -m crawler.scrape --reset
+
+# To run the script with the backup data option
+python -m crawler.scrape --on-backup
 ```
 
 ### Reading Course Data from Local Cache

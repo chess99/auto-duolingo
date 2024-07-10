@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from typing import List, TypedDict
 
 from crawler.session_process import (
     deduplicate_sentence_translations,
@@ -93,7 +94,14 @@ def save_results_to_json(all_results, reset=False):
                   ensure_ascii=False, indent=4)
 
 
-def get_cached_sentence_pairs():
+class SentencePair(TypedDict):
+    sentence: str
+    translation: str
+    tokens: List[str]
+    wrongTokens: List[str]
+
+
+def get_cached_sentence_pairs() -> List[SentencePair]:
     try:
         with open(COURSE_DATA_JSON_PATH, 'r') as file:
             data = json.load(file)

@@ -1,6 +1,6 @@
 import unittest
 
-from auto_duolingo.string_match import sort_substrings
+from auto_duolingo.string_util import sort_substrings
 
 
 class TestSortSubstrings(unittest.TestCase):

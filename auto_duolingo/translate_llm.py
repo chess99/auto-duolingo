@@ -3,12 +3,18 @@ from typing import List
 
 from zhipuai import ZhipuAI
 
+from auto_duolingo.lang_detect import detect_language
+from auto_duolingo.string_util import sort_substrings
 from config import ZHIPUAI_API_KEY
 
 
-def llm_generate_sorted_sentence(original_sentence: str, substrings: List[str]) -> List[str]:
-    print(f"Original sentence: {original_sentence}")
-    print(f"substrings: {substrings}")
+def llm_generate_sorted_sentence(original_sentence: str, substrings: List[str], max_attempts=3) -> List[str]:
+    original_language = detect_language(original_sentence)
+    target_language = detect_language(' '.join(substrings))
+    if original_language == "Japanese" and target_language == "Japanese":
+        sorted_substrings, unmatched = sort_substrings(
+            original_sentence, substrings)
+        return sorted_substrings
 
     prompt = (
         "Task: \n"
@@ -40,7 +46,6 @@ def llm_generate_sorted_sentence(original_sentence: str, substrings: List[str]) 
 
     client = ZhipuAI(api_key=ZHIPUAI_API_KEY)
     # client = Ark(api_key=ARK_API_KEY)
-    max_attempts = 3
 
     for attempt in range(max_attempts):
         response = client.chat.completions.create(

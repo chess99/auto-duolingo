@@ -1,3 +1,4 @@
+import argparse
 import os
 import shutil
 from datetime import datetime
@@ -18,7 +19,7 @@ def run_course_data_processing(options: Optional[dict] = None):
     backup_directory = ".temp/backup_sessions/"
     options = options or {}
 
-    if options.get("reload_session_data", True):
+    if options.get("reset_session_data", True):
         # Check if the sessions directory exists and move it to backup
         if os.path.exists(sessions_directory):
             if not os.path.exists(backup_directory):
@@ -37,7 +38,36 @@ def run_course_data_processing(options: Optional[dict] = None):
     return all_results
 
 
+def run_course_data_processing_on_backup():
+    backup_directory = ".temp/backup_sessions/"
+
+    for entry in os.listdir(backup_directory):
+        full_path = os.path.join(backup_directory, entry)
+        if os.path.isdir(full_path):
+            results = process_all_sessions(full_path)
+            save_results_to_json(results)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Run the web scraping process.")
+
+    parser.add_argument('--on-backup', action='store_true',
+                        help="Run processing on backup data")
+
+    parser.add_argument('--reset', action='store_true',
+                        help="Reload session data")
+
+    args = parser.parse_args()
+
+    if args.on_backup:
+        run_course_data_processing_on_backup()
+    else:
+        all_results = run_course_data_processing(
+            {"reset_session_data": args.reset})
+        save_results_to_db(all_results)
+        save_results_to_json(all_results)
+
+
 if __name__ == "__main__":
-    all_results = run_course_data_processing({"reload_session_data": False})
-    save_results_to_db(all_results)
-    save_results_to_json(all_results)
+    main()

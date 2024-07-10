@@ -16,8 +16,7 @@ def process_listenTap(item):
         'sentence': metadata.get('text'),
         'translation': metadata.get('solution_translation'),
         'tokens': metadata.get('tokens'),
-        # 'learning_language': metadata.get('learning_language'),
-        # 'from_language': metadata.get('from_language')
+        'wrongTokens': metadata.get('wrong_tokens', [])
     }
     return {"type": "SENTENCE_TRANSLATION", "data": [translation_data]}
 
@@ -48,8 +47,7 @@ def process_translate(item):
         'sentence': metadata.get('sentence'),
         'translation': metadata.get('translation'),
         'tokens': metadata.get('tokens'),
-        # # 'learning_language': metadata.get('learning_language'),
-        # # 'from_language': metadata.get('from_language')
+        'wrongTokens': metadata.get('wrong_tokens', [])
     }
     return {"type": "SENTENCE_TRANSLATION", "data": [translation_data]}
 
