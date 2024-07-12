@@ -1,14 +1,31 @@
 import re
 from typing import List
 
+from volcenginesdkarkruntime import Ark
 from zhipuai import ZhipuAI
 
 from auto_duolingo.lang_detect import detect_language
 from auto_duolingo.string_util import sort_substrings
-from config import ZHIPUAI_API_KEY
+from config import ARK_API_KEY, ZHIPUAI_API_KEY
+
+LLM_IN_USE = "ark"  # "zhipuai" or "ark"
 
 
-def llm_generate_sorted_sentence(original_sentence: str, substrings: List[str], max_attempts=3) -> List[str]:
+def _llm_get_client():
+    if LLM_IN_USE == "zhipuai":
+        return ZhipuAI(api_key=ZHIPUAI_API_KEY)
+    elif LLM_IN_USE == "ark":
+        return Ark(api_key=ARK_API_KEY)
+
+
+def _llm_get_model_name():
+    if LLM_IN_USE == "zhipuai":
+        return "glm-4"
+    elif LLM_IN_USE == "ark":
+        return "ep-20240629142039-bt9sd"
+
+
+def llm_sort_substrings(original_sentence: str, substrings: List[str], max_attempts=3) -> List[str]:
     original_language = detect_language(original_sentence)
     target_language = detect_language(' '.join(substrings))
     if original_language == "Japanese" and target_language == "Japanese":
@@ -44,13 +61,10 @@ def llm_generate_sorted_sentence(original_sentence: str, substrings: List[str], 
         "Return ONLY the hash-separated string as your response."
     )
 
-    client = ZhipuAI(api_key=ZHIPUAI_API_KEY)
-    # client = Ark(api_key=ARK_API_KEY)
-
+    client = _llm_get_client()
     for attempt in range(max_attempts):
         response = client.chat.completions.create(
-            model="glm-4",
-            # model="ep-20240629142039-bt9sd",
+            model=_llm_get_model_name(),
             messages=[
                 {"role": "system", "content": "You are a precise translation assistant."},
                 {"role": "user", "content": prompt},
@@ -77,7 +91,47 @@ def llm_generate_sorted_sentence(original_sentence: str, substrings: List[str], 
     print("Error: Could not generate a valid translation with the provided substrings.")
     return []
 
-# "Respond with only the selected option. Do not include any additional text or explanation."
+def llm_sort_substrings_2(original_sentence: str, substrings: List[str], max_attempts: int = 3) -> List[str]:
+    original_language = detect_language(original_sentence)
+    target_language = detect_language(' '.join(substrings))
+    if original_language == "Japanese" and target_language == "Japanese":
+        sorted_substrings, unmatched = sort_substrings(
+            original_sentence, substrings)
+        return sorted_substrings
+
+    print(f"target_language: {target_language}")
+
+    prompt = (
+        f"Translate the following sentence into {target_language} accurately, "
+        f"ensuring the meaning of the translation aligns closely with the original sentence: \"{original_sentence}\". "
+        f"Use ONLY the provided substrings: {', '.join(substrings)}. "
+        f"Be mindful that not all provided substrings may be relevant. Prioritize the translation's accuracy and fidelity to the original meaning, "
+        f"but do not use words outside the provided options. "
+        f"If a substring doesn't fit or compromises the translation's accuracy or meaning, reconsider its use. "
+        f"Ensure the translation conveys the same meaning as the original sentence without using words outside the provided substrings. "
+        f"Return ONLY the translation string as your response."
+    )
+
+    client = _llm_get_client()
+    for _ in range(max_attempts):
+        response = client.chat.completions.create(
+            model=_llm_get_model_name(),
+            messages=[
+                {"role": "system", "content": "You are a translation assistant."},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.5,
+            max_tokens=100,
+        )
+        translation = response.choices[0].message.content.strip()
+        print(f"Translation attempt: {translation}")
+        sorted_substrings, unmatched = sort_substrings(translation, substrings)
+        if not unmatched:  # If all substrings are matched, return this translation
+            return sorted_substrings
+
+    print("No valid translation found after all attempts.")
+    return []
+
 
 
 def llm_pick_semantically_matching_word(original_word: str, options: List[str]) -> str:
@@ -93,9 +147,9 @@ def llm_pick_semantically_matching_word(original_word: str, options: List[str]) 
         "Respond with only the selected option. Do not include any additional text or explanation."
     )
 
-    client = ZhipuAI(api_key=ZHIPUAI_API_KEY)
+    client = _llm_get_client()
     response = client.chat.completions.create(
-        model="glm-4",
+        model=_llm_get_model_name(),
         messages=[{"role": "user", "content": prompt}],
         temperature=0
     )
@@ -126,11 +180,9 @@ def llm_pick_corresponding_pronunciation(original_word: str, options: List[str])
         "Please respond with only the selected option. Do not include any additional text or explanation."
     )
 
-    client = ZhipuAI(api_key=ZHIPUAI_API_KEY)
-    # client = Ark(api_key=ARK_API_KEY)
+    client = _llm_get_client()
     response = client.chat.completions.create(
-        model="glm-4",
-        # model="ep-20240629142039-bt9sd",
+        model=_llm_get_model_name(),
         messages=[{"role": "user", "content": prompt}],
     )
 
@@ -163,9 +215,9 @@ def llm_sort_translations_by_original_order(original_words: List[str], options: 
         "return ONLY the hash-separated string as your response."
     )
 
-    client = ZhipuAI(api_key=ZHIPUAI_API_KEY)
+    client = _llm_get_client()
     response = client.chat.completions.create(
-        model="glm-4",
+        model=_llm_get_model_name(),
         messages=[
             {"role": "user", "content": prompt},
         ],
@@ -196,6 +248,6 @@ if __name__ == "__main__":
     words = [word for word, _ in boxes[:-1]]
 
     # 调用函数并打印结果
-    sorted_sentence = llm_generate_sorted_sentence(original_sentence, words)
+    sorted_sentence = llm_sort_substrings(original_sentence, words)
     print(sorted_sentence)
     print(type(sorted_sentence))

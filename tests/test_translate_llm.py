@@ -1,8 +1,8 @@
 import unittest
 
 from auto_duolingo.translate_llm import (
-    llm_generate_sorted_sentence,
     llm_pick_corresponding_pronunciation,
+    llm_sort_substrings,
 )
 
 
@@ -24,21 +24,21 @@ class TestGenerateSortedSentenceWithoutPatch(unittest.TestCase):
     def test_chinese_to_japanese_translation_different_order(self):
         original_sentence = "我喜欢旅游"
         words = ["旅行が", "好きです", "私は"]
-        result = llm_generate_sorted_sentence(original_sentence, words)
+        result = llm_sort_substrings(original_sentence, words)
         expected = ["私は", "旅行が", "好きです"]
         self.assertEqual(result, expected)
 
     def test_japanese_to_chinese_translation_different_order(self):
         original_sentence = "私はコーヒーを飲むのが好きです"
         words = ["咖啡", "喜欢", "喝", "我"]
-        result = llm_generate_sorted_sentence(original_sentence, words)
+        result = llm_sort_substrings(original_sentence, words)
         expected = ["我", "喜欢", "喝", "咖啡"]
         self.assertEqual(result, expected)
 
     def test_translation_with_extra_words(self):
         original_sentence = "I love coding and coffee"
         words = ["我", "爱", "编程", "和", "咖啡", "还有", "旅游"]
-        result = llm_generate_sorted_sentence(original_sentence, words)
+        result = llm_sort_substrings(original_sentence, words)
         expected = ["我", "爱", "编程", "和", "咖啡"]
         self.assertEqual(result, expected)
 

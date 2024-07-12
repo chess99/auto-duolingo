@@ -15,8 +15,7 @@
 # 从 get_cached_sentence_pairs() 的结果中随机取出 20 个，然后分别调用这两个函数，max_attempts 都使用 1, 统计准确率
 import random
 
-from auto_duolingo.trans import find_valid_translation
-from auto_duolingo.translate_llm import llm_generate_sorted_sentence
+from auto_duolingo.translate_llm import llm_sort_substrings, llm_sort_substrings_2
 from crawler.persist import get_cached_sentence_pairs
 
 
@@ -41,13 +40,13 @@ def benchmark(sample_count=3, llm_attempts=1):
         print(f'tokens: {pair["tokens"]}')
         print(f"substrings: {substrings}")
 
-        llm_v1_result = llm_generate_sorted_sentence(
+        llm_v1_result = llm_sort_substrings(
             pair["sentence"], substrings, llm_attempts)
         print(f"llm_v1_result: {llm_v1_result}")
         if llm_v1_result == pair["tokens"]:
             llm_v1_success_count += 1
 
-        llm_v2_result = find_valid_translation(
+        llm_v2_result = llm_sort_substrings_2(
             pair["sentence"], substrings, llm_attempts)
         print(f"llm_v2_result: {llm_v2_result}")
         if llm_v2_result == pair["tokens"]:
