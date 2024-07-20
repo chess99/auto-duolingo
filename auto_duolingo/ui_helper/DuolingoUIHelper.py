@@ -1,10 +1,12 @@
 import re
 import time
+import xml.etree.ElementTree as ET
 from typing import Dict, List, Tuple
 
 import uiautomator2 as u2
 
 from auto_duolingo.Tabs import Tabs
+from auto_duolingo.ui_helper.ui_info_extractor import get_continue_button_bounds
 from tools.adb_utils import get_device_id
 
 
@@ -13,6 +15,9 @@ class DuolingoUIHelper:
         device_id = get_device_id()
         print(f"Connecting to {device_id}...")
         self.d = u2.connect(device_id)
+
+    def get_current_screen(self) -> ET.ElementTree:
+        return ET.ElementTree(ET.fromstring(self.d.dump_hierarchy()))
 
     def click_elements_sequentially(self, elements: List[str]):
         click_started = False
@@ -30,23 +35,8 @@ class DuolingoUIHelper:
         except Exception as e:
             print(f"Error clicking on element: {e}")
 
-    def is_app_launched(self) -> bool:
-        ui_hierarchy = self.d.dump_hierarchy()
-        return 'package="com.duolingo"' in ui_hierarchy
-
-    def is_in_unit_selection_screen(self) -> bool:
-        return any(self.d(resourceId=element).exists for element in ELEMENTS_OF_UNIT_SELECTION)
-
     def select_unit(self):
         self.click_element_if_exists(ELEMENTS_OF_UNIT_SELECTION)
-
-    def is_in_question_screen(self) -> bool:
-        elements_to_check = [
-            "com.duolingo:id/challengeInstruction",
-            "com.duolingo:id/submitButton",
-            "com.duolingo:id/disableListenButton",
-        ]
-        return any(self.d(resourceId=element).exists for element in elements_to_check)
 
     def launch_app(self):
         self.d.app_start('com.duolingo')
@@ -54,9 +44,6 @@ class DuolingoUIHelper:
     def wait_for_tabs(self):
         while not self.d(resourceId="com.duolingo:id/tabs").exists:
             time.sleep(1)
-
-    def is_listening_question(self) -> bool:
-        return any(self.d(resourceId=element).exists for element in ELEMENTS_OF_LISTENING_QUESTION)
 
     def skip_listening_question(self):
         self.click_elements_sequentially(ELEMENTS_OF_LISTENING_QUESTION)
@@ -131,6 +118,18 @@ class DuolingoUIHelper:
         time.sleep(0.1)
 
     def is_waiting_continue(self):
+        CONTINUE_BUTTON_IDS = [
+            "com.duolingo:id/continueButtonGreen",
+            "com.duolingo:id/continueButtonYellow",
+            "com.duolingo:id/continueButtonRed",
+            "com.duolingo:id/coachContinueButton",
+            "com.duolingo:id/continueButtonView"  # "领取经验"
+            "com.duolingo:id/heartsNoThanks",  # 红心 "不，谢谢"
+            "com.duolingo:id/boostsDrawerNoThanksButton",  # 时间宝 "不，谢谢"
+            "com.duolingo:id/rampUpQuitEndSession"  # 时间宝 "退出"
+            "com.duolingo:id/sessionEndContinueButton",  # 单词配对乐 "继续"
+            "com.duolingo:id/matchMadnessStartChallenge",  # 单词配对乐 "开始 +40 经验"
+        ]
         return any(self.d(resourceId=button_id).exists for button_id in CONTINUE_BUTTON_IDS)
 
     def click_continue_button(self):
@@ -139,6 +138,11 @@ class DuolingoUIHelper:
             if button.exists:
                 button.click()
                 break
+        time.sleep(0.1)
+
+    def click_continue_button_by_tree(self, tree: ET.ElementTree):
+        bounds = get_continue_button_bounds(tree)
+        self.perform_clicks_by_bounds([bounds])
         time.sleep(0.1)
 
     def reset_selected_answers(self):
@@ -176,21 +180,6 @@ class DuolingoUIHelper:
             resourceId=selected_option_id, selected=True)
         if selected_option_element.exists:
             selected_option_element.click()
-
-    def extract_matching_pairs(self):
-        """Extract matching pairs for matching questions."""
-        option_text_id = "com.duolingo:id/optionText"
-        elements = self.d(resourceId=option_text_id)
-        words = []
-        options = []
-        for index, element in enumerate(elements):
-            text = element.get_text()
-            bounds: Dict[str, int] = element.info['bounds']
-            if index % 2 == 0:  # Even indices are original words
-                words.append((text, bounds))
-            else:  # Odd indices are translation options
-                options.append((text, bounds))
-        return words, options
 
     def get_answer_status(self):
         result = {

@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-from auto_duolingo.DuolingoUIHelper import DuolingoUIHelper
+from auto_duolingo.ui_helper.DuolingoUIHelper import DuolingoUIHelper
 
 
 class TestDuolingoUIHelper(unittest.TestCase):

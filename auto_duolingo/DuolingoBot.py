@@ -1,13 +1,24 @@
 import time
+import xml.etree.ElementTree as ET
 
-from auto_duolingo.DuolingoUIHelper import DuolingoUIHelper
+from auto_duolingo.constants import QuestionType
 from auto_duolingo.logger import log_incorrect_answer
 from auto_duolingo.question_answer import (
-    QuestionType,
     solve_matching_pairs,
     solve_translate_sentence,
     solve_translate_word,
     solve_word_pronunciation,
+)
+from auto_duolingo.ui_helper.DuolingoUIHelper import DuolingoUIHelper
+from auto_duolingo.ui_helper.ui_info_extractor import (
+    detect_question_type,
+    extract_matching_pairs,
+    get_continue_button_bounds,
+    is_app_launched,
+    is_in_question_screen,
+    is_in_unit_selection_screen,
+    is_in_word_match_madness_screen,
+    is_listening_question,
 )
 from db.SentencePairDB import SentencePairDB
 
@@ -21,35 +32,12 @@ class DuolingoBot:
         self.state = "START"
         self.ui_helper = DuolingoUIHelper()
 
-    def detect_question_type(self):
-        challenge_instruction = self.ui_helper.extract_challenge_instruction()
-
-        if challenge_instruction == "选择正确的翻译":
-            return QuestionType.CHOOSE_CORRECT_TRANSLATION
-
-        if challenge_instruction == "选择对应的图片":
-            return QuestionType.CHOOSE_CORRECT_PICTURE
-
-        if challenge_instruction == "选择配对":
-            return QuestionType.CHOOSE_MATCHING_PAIR
-
-        if challenge_instruction == "翻译这句话":
-            return QuestionType.TRANSLATE_SENTENCE
-
-        if "这个怎么读" in challenge_instruction:
-            return QuestionType.HOW_TO_PRONOUNCE
-
-        if "选择" in challenge_instruction and "对应的字符" in challenge_instruction:
-            return QuestionType.CHOOSE_CORRECT_CHARACTER
-
-        return QuestionType.UNKNOWN
-
-    def answer_question(self):
-        if self.ui_helper.is_listening_question():
+    def answer_question(self, tree: ET.ElementTree):
+        if is_listening_question(tree):
             print("Listening question detected, skipping...")
             self.ui_helper.skip_listening_question()
 
-        question_type = self.detect_question_type()
+        question_type = detect_question_type(tree)
         print(f"question_type: {question_type}")
 
         if question_type == QuestionType.UNKNOWN:
@@ -75,12 +63,13 @@ class DuolingoBot:
             self.ui_helper.click_continue_button()
 
         if question_type == QuestionType.CHOOSE_MATCHING_PAIR:
-            self.ui_helper.deselect_selected_option()
-            words, options = self.ui_helper.extract_matching_pairs()
-            bounds_to_click = solve_matching_pairs(words, options)
+            is_continuous_mode = is_in_word_match_madness_screen(tree)
+            if not is_continuous_mode:
+                self.ui_helper.deselect_selected_option()
+            words, options = extract_matching_pairs(tree)
+            bounds_to_click = solve_matching_pairs(
+                words, options, disable_inference=is_continuous_mode)
             self.ui_helper.perform_clicks_by_bounds(bounds_to_click)
-            # self.ui_helper.click_submit_button() # 不需要点击提交按钮
-            self.ui_helper.click_continue_button()
 
         if question_type == QuestionType.TRANSLATE_SENTENCE:
             self.ui_helper.click_hint_text_if_exists()
@@ -122,21 +111,25 @@ class DuolingoBot:
     def run(self):
         print("Bot started running.")
         while True:
-            if not self.ui_helper.is_app_launched():
+            tree = self.ui_helper.get_current_screen()
+            continue_button_bounds = get_continue_button_bounds(tree)
+
+            if not is_app_launched(tree):
                 print("App is not launched. Launching app...")
                 self.ui_helper.launch_app()
-            elif self.ui_helper.is_in_unit_selection_screen():
+            elif is_in_unit_selection_screen(tree):
                 print("In unit selection screen. Selecting unit...")
                 self.ui_helper.select_unit()
-            elif self.ui_helper.is_in_question_screen():
+            elif is_in_question_screen(tree):
                 print("In question screen. Answering question...")
-                self.answer_question()
+                self.answer_question(tree)
             elif self.ui_helper.is_in_no_hearts_screen():
                 print("No hearts.")
                 self.state = "END"
-            elif self.ui_helper.is_waiting_continue():
+            elif continue_button_bounds:
                 print("Waiting for continue button. Clicking continue button...")
-                self.ui_helper.click_continue_button()
+                self.ui_helper.perform_clicks_by_bounds(
+                    [continue_button_bounds])
             else:
                 print("Unknown state. Resting for 1 second...")
                 time.sleep(1)

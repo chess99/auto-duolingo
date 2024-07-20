@@ -7,6 +7,19 @@
             "request": "launch",
             "module": "auto_duolingo.main",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: Unittest - Discover Tests",
+            "type": "python",
+            "request": "launch",
+            "module": "unittest",
+            "args": [
+                "discover",
+                "-s",
+                "tests"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }
