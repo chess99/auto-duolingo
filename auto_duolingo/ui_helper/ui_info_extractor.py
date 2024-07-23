@@ -1,8 +1,14 @@
 import re
 import xml.etree.ElementTree as ET
-from typing import Optional
+from typing import Dict, List, Optional, Tuple
 
 from auto_duolingo.constants import QuestionType
+from auto_duolingo.ui_helper.constants import (
+    CONTINUE_BUTTON_IDS,
+    ELEMENTS_OF_LISTENING_QUESTION,
+    ELEMENTS_OF_QUESTION_SCREEN,
+    ELEMENTS_OF_UNIT_SELECTION,
+)
 
 
 def _bounds_str_to_dict(bounds_str: str) -> dict:
@@ -15,6 +21,10 @@ def _bounds_str_to_dict(bounds_str: str) -> dict:
     numbers = [int(num) for num in re.findall(r'\d+', bounds_str)]
     # Assign extracted numbers to the respective positions
     return {'left': numbers[0], 'top': numbers[1], 'right': numbers[2], 'bottom': numbers[3]}
+
+
+def is_element_present(tree: ET.ElementTree, element_id: str) -> bool:
+    return tree.find(f".//*[@resource-id='{element_id}']") is not None
 
 
 def is_app_launched(tree: ET.ElementTree) -> bool:
@@ -31,29 +41,10 @@ def is_app_launched(tree: ET.ElementTree) -> bool:
 
 
 def is_in_unit_selection_screen(tree: ET.ElementTree) -> bool:
-    ELEMENTS_OF_UNIT_SELECTION = [
-        "com.duolingo:id/tooltip",
-        "com.duolingo:id/learnButton",
-        "com.duolingo:id/startButton",
-        "com.duolingo:id/primaryButton",
-        "com.duolingo:id/xpBoostLearnButtonType",  # "开始⚡20经验"
-    ]
     return any(tree.find(f".//*[@resource-id='{element}']") is not None for element in ELEMENTS_OF_UNIT_SELECTION)
 
 
 def get_continue_button_bounds(tree: ET.ElementTree) -> Optional[str]:
-    CONTINUE_BUTTON_IDS = [
-        "com.duolingo:id/continueButtonGreen",
-        "com.duolingo:id/continueButtonYellow",
-        "com.duolingo:id/continueButtonRed",
-        "com.duolingo:id/coachContinueButton",
-        "com.duolingo:id/continueButtonView",  # "领取经验"
-        "com.duolingo:id/heartsNoThanks",  # 红心 "不，谢谢"
-        "com.duolingo:id/boostsDrawerNoThanksButton",  # 时间宝 "不，谢谢"
-        "com.duolingo:id/rampUpQuitEndSession",  # 时间宝 "退出"
-        "com.duolingo:id/sessionEndContinueButton",  # 单词配对乐 "继续"
-        "com.duolingo:id/matchMadnessStartChallenge",  # 单词配对乐 "开始 +40 经验"
-    ]
     for button_id in CONTINUE_BUTTON_IDS:
         xpath_query = f".//*[@resource-id='{button_id}']"
         element = tree.find(xpath_query)
@@ -63,31 +54,63 @@ def get_continue_button_bounds(tree: ET.ElementTree) -> Optional[str]:
 
 
 def is_in_question_screen(tree: ET.ElementTree) -> bool:
-    elements_to_check = [
-        "com.duolingo:id/challengeInstruction",
-        "com.duolingo:id/submitButton",
-        "com.duolingo:id/disableListenButton",
-    ]
-    return any(tree.find(f".//*[@resource-id='{element}']") is not None for element in elements_to_check)
+    return any(tree.find(f".//*[@resource-id='{element}']") is not None for element in ELEMENTS_OF_QUESTION_SCREEN)
 
 
 def is_listening_question(tree: ET.ElementTree) -> bool:
-    ELEMENTS_OF_LISTENING_QUESTION = [
-        "com.duolingo:id/disableListenButton",
-        "com.duolingo:id/continueButtonYellow"
-    ]
     return any(tree.find(f".//*[@resource-id='{element}']") is not None for element in ELEMENTS_OF_LISTENING_QUESTION)
 
 
 def extract_challenge_instruction(tree: ET.ElementTree) -> str:
     """Extract challenge instruction for a challenge question using a single UI dump."""
     instruction_element = tree.find(
-        ".//*[@resource-id='com.duolingo:id/challengeInstruction']")
+        ".//*[@resource-id='com.duolingo:id/challengeInstruction']"
+    )
     if instruction_element is not None:
-        instruction = instruction_element.attrib.get('text', '')
+        instruction = instruction_element.attrib.get("text", "")
         return instruction
     else:
         return ""  # Return an empty string if the element does not exist
+
+
+def extract_origin_sentence(tree: ET.ElementTree) -> str:
+    sentence_element = tree.find(
+        ".//*[@resource-id='com.duolingo:id/hintablePrompt']")
+    if sentence_element is not None:
+        return sentence_element.attrib.get("text", "")
+    else:
+        return ""  # Return an empty string if the element does not exist
+
+
+def extract_option_list_base(
+    tree: ET.ElementTree, container_resource_id: str
+) -> List[Tuple[str, Dict[str, int]]]:
+    options: List[Tuple[str, Dict[str, int]]] = []
+    tap_tokens = tree.findall(
+        f".//*[@resource-id='{container_resource_id}']//*[@resource-id='com.duolingo:id/tapToken']"
+    )
+    for token in tap_tokens:
+        option_text_element = token.find(
+            ".//*[@resource-id='com.duolingo:id/optionText']"
+        )
+        if option_text_element is not None:
+            option_text: str = option_text_element.attrib.get("text", "")
+            bounds = _bounds_str_to_dict(option_text_element.attrib["bounds"])
+            option: Tuple[str, Dict[str, int]] = (option_text, bounds)
+            options.append(option)
+    return options
+
+
+def extract_selected_options(tree: ET.ElementTree):
+    return extract_option_list_base(tree, "com.duolingo:id/guessContainer")
+
+
+def extract_alternative_options(tree: ET.ElementTree):
+    options = extract_option_list_base(
+        tree, "com.duolingo:id/optionsContainer")
+    if not options:
+        options = extract_option_list_base(tree, "com.duolingo:id/tapOptions")
+    return options
 
 
 def detect_question_type(tree: ET.ElementTree) -> QuestionType:
@@ -108,6 +131,7 @@ def detect_question_type(tree: ET.ElementTree) -> QuestionType:
     if "选择" in challenge_instruction and "对应的字符" in challenge_instruction:
         return QuestionType.CHOOSE_CORRECT_CHARACTER
     return QuestionType.UNKNOWN
+
 
 def is_in_word_match_madness_screen(tree: ET.ElementTree) -> bool:
     """ "单词配对乐" """

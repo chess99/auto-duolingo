@@ -4,7 +4,6 @@ from auto_duolingo.string_util import sort_substrings
 from auto_duolingo.translate_llm import (
     llm_pick_corresponding_pronunciation,
     llm_pick_semantically_matching_word,
-    llm_sort_substrings,
     llm_sort_translations_by_original_order,
 )
 from db.SentencePairDB import SentencePairDB
@@ -34,8 +33,9 @@ def solve_translate_sentence(sentence: str, options_with_bounds: List[Tuple[str,
             translation, [substring for substring, _ in options_with_bounds])
 
     if translation is None:
-        sorted_substrings = llm_sort_substrings(
-            sentence, [substring for substring, _ in options_with_bounds])
+        sorted_substrings = []
+        # sorted_substrings = llm_sort_substrings(
+        #     sentence, [substring for substring, _ in options_with_bounds])
 
     print(f"sorted_substrings: {sorted_substrings}")
 

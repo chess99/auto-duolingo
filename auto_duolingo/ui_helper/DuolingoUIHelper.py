@@ -6,6 +6,11 @@ from typing import Dict, List, Tuple
 import uiautomator2 as u2
 
 from auto_duolingo.Tabs import Tabs
+from auto_duolingo.ui_helper.constants import (
+    CONTINUE_BUTTON_IDS,
+    ELEMENTS_OF_LISTENING_QUESTION,
+    ELEMENTS_OF_UNIT_SELECTION,
+)
 from auto_duolingo.ui_helper.ui_info_extractor import get_continue_button_bounds
 from tools.adb_utils import get_device_id
 
@@ -68,10 +73,6 @@ class DuolingoUIHelper:
                 break
         time.sleep(0.1)
 
-    def click_hint_text_if_exists(self) -> bool:
-        """ 轻点此处查看词库 """
-        return self.click_element_if_exists(["com.duolingo:id/hintText"])
-
     def extract_origin_sentence(self) -> str:
         sentence_resource_id = "com.duolingo:id/hintablePrompt"
         sentence_element = self.d(resourceId=sentence_resource_id)
@@ -97,14 +98,6 @@ class DuolingoUIHelper:
     def extract_selected_options(self):
         return self.extract_option_list_base("com.duolingo:id/guessContainer")
 
-    def extract_alternative_options(self):
-        options = self.extract_option_list_base(
-            "com.duolingo:id/optionsContainer")
-        if not options:
-            options = self.extract_option_list_base(
-                "com.duolingo:id/tapOptions")
-        return options
-
     def perform_clicks_by_bounds(self, bounds_list: List[Dict[str, int]], interval: float = 0.1):
         for bounds in bounds_list:
             click_x = bounds['left'] + (bounds['right'] - bounds['left']) // 2
@@ -118,18 +111,6 @@ class DuolingoUIHelper:
         time.sleep(0.1)
 
     def is_waiting_continue(self):
-        CONTINUE_BUTTON_IDS = [
-            "com.duolingo:id/continueButtonGreen",
-            "com.duolingo:id/continueButtonYellow",
-            "com.duolingo:id/continueButtonRed",
-            "com.duolingo:id/coachContinueButton",
-            "com.duolingo:id/continueButtonView"  # "领取经验"
-            "com.duolingo:id/heartsNoThanks",  # 红心 "不，谢谢"
-            "com.duolingo:id/boostsDrawerNoThanksButton",  # 时间宝 "不，谢谢"
-            "com.duolingo:id/rampUpQuitEndSession"  # 时间宝 "退出"
-            "com.duolingo:id/sessionEndContinueButton",  # 单词配对乐 "继续"
-            "com.duolingo:id/matchMadnessStartChallenge",  # 单词配对乐 "开始 +40 经验"
-        ]
         return any(self.d(resourceId=button_id).exists for button_id in CONTINUE_BUTTON_IDS)
 
     def click_continue_button(self):
@@ -175,11 +156,17 @@ class DuolingoUIHelper:
         return self.extract_option_list("com.duolingo:id/selection", "com.duolingo:id/scaledText")
 
     def deselect_selected_option(self):
+        start_time = time.time()  # Start timing
+
         selected_option_id = "com.duolingo:id/optionText"
         selected_option_element = self.d(
             resourceId=selected_option_id, selected=True)
         if selected_option_element.exists:
             selected_option_element.click()
+
+        end_time = time.time()  # End timing
+        # Print elapsed time
+        print(f"deselect_selected_option: {end_time - start_time} seconds")
 
     def get_answer_status(self):
         result = {
@@ -257,32 +244,3 @@ class DuolingoUIHelper:
             element.click()
             return True
         return False
-
-
-# Constants used in the class
-ELEMENTS_OF_UNIT_SELECTION = [
-    "com.duolingo:id/tooltip",
-    "com.duolingo:id/learnButton",
-    "com.duolingo:id/startButton",
-    "com.duolingo:id/primaryButton",
-    "com.duolingo:id/xpBoostLearnButtonType",  # "开始⚡20经验"
-]
-
-ELEMENTS_OF_LISTENING_QUESTION = [
-    "com.duolingo:id/disableListenButton",
-    "com.duolingo:id/continueButtonYellow"
-]
-
-
-CONTINUE_BUTTON_IDS = [
-    "com.duolingo:id/continueButtonGreen",
-    "com.duolingo:id/continueButtonYellow",
-    "com.duolingo:id/continueButtonRed",
-    "com.duolingo:id/coachContinueButton",
-    "com.duolingo:id/continueButtonView"  # "领取经验"
-    "com.duolingo:id/heartsNoThanks",  # 红心 "不，谢谢"
-    "com.duolingo:id/boostsDrawerNoThanksButton",  # 时间宝 "不，谢谢"
-    "com.duolingo:id/rampUpQuitEndSession"  # 时间宝 "退出"
-    "com.duolingo:id/sessionEndContinueButton",  # 单词配对乐 "继续"
-    "com.duolingo:id/matchMadnessStartChallenge",  # 单词配对乐 "开始 +40 经验"
-]

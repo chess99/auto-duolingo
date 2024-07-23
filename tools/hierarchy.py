@@ -14,11 +14,11 @@ def get_app_hierarchy(device_id, output_path):
     xml_hierarchy = d.dump_hierarchy()
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-    with open(output_path, "w") as file:
+    with open(output_path, "w", encoding="utf-8") as file:
         file.write(xml_hierarchy)
 
     end_time = time.time()  # Capture end time
-    print(f"Time taken: {end_time - start_time} seconds")  # Print the time taken
+    print(f"Time taken: {end_time - start_time} seconds")
 
     return xml_hierarchy
 

@@ -16,8 +16,10 @@ def sort_substrings(sentence, substrings):
             found_substrings.append((sub, start))
             start += len(sub)  # Move past this substring
 
-    # Sort by start position
-    found_substrings.sort(key=lambda x: x[1])
+    # Sort by start position, then by length of the substring in descending order
+    # To handle cases with partial overlaps correctly,
+    # we need to adjust the logic to prioritize longer substrings when they start at the same position as shorter ones.
+    found_substrings.sort(key=lambda x: (x[1], -len(x[0])))
 
     # Build the result list and the remaining sentence
     result_substrings = []
@@ -33,12 +35,3 @@ def sort_substrings(sentence, substrings):
         unmatched = unmatched.replace(sub, '', 1)
 
     return result_substrings, unmatched
-
-
-if __name__ == "__main__":
-    # Example usage
-    substrings = ['を', '細かく', 'で', 'ください', '大豆', '刻ん', 'じゃがいも']
-    sentence = "じゃがいもを細かく刻んでください。"
-    sorted_substrings, unmatched = sort_substrings(sentence, substrings)
-    print("Sorted Substrings:", sorted_substrings)
-    print("Unmatched Part:", unmatched)
