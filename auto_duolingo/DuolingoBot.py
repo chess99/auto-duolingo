@@ -14,11 +14,19 @@ from auto_duolingo.ui_helper.DuolingoUIHelper import DuolingoUIHelper
 from auto_duolingo.ui_helper.ui_info_extractor import (
     detect_question_type,
     extract_alternative_options,
+    extract_flashcard_text,
     extract_matching_pairs,
+    extract_option_list_of_images,
+    extract_option_list_of_scaled_text,
+    extract_option_list_of_word_translation,
     extract_origin_sentence,
+    extract_question_stem_text,
+    extract_selected_options,
+    get_answer_status,
     get_continue_button_bounds,
     is_app_launched,
     is_element_present,
+    is_in_no_hearts_screen,
     is_in_question_screen,
     is_in_unit_selection_screen,
     is_in_word_match_madness_screen,
@@ -41,6 +49,15 @@ class DuolingoBot:
             print("Listening question detected, skipping...")
             self.ui_helper.skip_listening_question()
 
+        is_continuous_mode = is_in_word_match_madness_screen(tree)
+        selected_options = extract_selected_options(tree)
+        if selected_options and not is_continuous_mode:
+            print("Resetting selected options...")
+            bounds_list = [option[1] for option in selected_options]
+            bounds_list.reverse()
+            self.ui_helper.perform_clicks_by_bounds(bounds_list)
+            tree = self.ui_helper.get_current_screen()
+
         question_type = detect_question_type(tree)
         print(f"question_type: {question_type}")
 
@@ -49,25 +66,19 @@ class DuolingoBot:
             return
 
         if question_type == QuestionType.CHOOSE_CORRECT_TRANSLATION:
-            self.ui_helper.deselect_selected_option()
             word = extract_origin_sentence(tree)
-            options = self.ui_helper.extract_option_list_of_word_translation()
+            options = extract_option_list_of_word_translation(tree)
             bounds_to_click = solve_translate_word(word, options)
             self.ui_helper.perform_clicks_by_bounds(bounds_to_click)
             self.ui_helper.click_submit_button()
 
         if question_type == QuestionType.CHOOSE_CORRECT_PICTURE:
-            self.ui_helper.deselect_selected_option()
             word = extract_origin_sentence(tree)
-            options = self.ui_helper.extract_option_list_of_images()
+            options = extract_option_list_of_images(tree)
             bounds_to_click = solve_translate_word(word, options)
             self.ui_helper.perform_clicks_by_bounds(bounds_to_click)
-            self.ui_helper.click_submit_button()
 
         if question_type == QuestionType.CHOOSE_MATCHING_PAIR:
-            is_continuous_mode = is_in_word_match_madness_screen(tree)
-            if not is_continuous_mode:
-                self.ui_helper.deselect_selected_option()
             words, options = extract_matching_pairs(tree)
             bounds_to_click = solve_matching_pairs(
                 words, options, disable_inference=is_continuous_mode
@@ -77,7 +88,6 @@ class DuolingoBot:
         if question_type == QuestionType.TRANSLATE_SENTENCE:
             if is_element_present(tree, BTN_HINT_TEXT):
                 self.ui_helper.click_element_if_exists([BTN_HINT_TEXT])
-            self.ui_helper.reset_selected_answers()
             sentence = extract_origin_sentence(tree)
             words = extract_alternative_options(tree)
             bounds_to_click = solve_translate_sentence(sentence, words)
@@ -87,7 +97,9 @@ class DuolingoBot:
                 self.ui_helper.perform_clicks_by_bounds([words[0][1]])
             self.ui_helper.click_submit_button()
 
-            result = self.ui_helper.get_answer_status()
+            self.ui_helper.wait_answer_result()
+            newTree = self.ui_helper.get_current_screen()
+            result = get_answer_status(newTree)
             if result.get("original_sentence") and result.get("correct_answer"):
                 SentencePairDB().insert_sentence_pair(
                     result["original_sentence"], result["correct_answer"]
@@ -96,17 +108,15 @@ class DuolingoBot:
                 log_incorrect_answer(result)
 
         if question_type == QuestionType.HOW_TO_PRONOUNCE:
-            self.ui_helper.deselect_selected_option()
-            word = self.ui_helper.extract_flashcard_text()
-            options = self.ui_helper.extract_option_list_of_word_translation()
+            word = extract_flashcard_text(tree)
+            options = extract_option_list_of_word_translation(tree)
             bounds_to_click = solve_word_pronunciation(word, options)
             self.ui_helper.perform_clicks_by_bounds(bounds_to_click)
             self.ui_helper.click_submit_button()
 
         if question_type == QuestionType.CHOOSE_CORRECT_CHARACTER:
-            self.ui_helper.deselect_selected_option()
-            word = self.ui_helper.extract_question_stem_text()
-            options = self.ui_helper.extract_option_list_of_scaled_text()
+            word = extract_question_stem_text(tree)
+            options = extract_option_list_of_scaled_text(tree)
             bounds_to_click = solve_word_pronunciation(word, options)
             self.ui_helper.perform_clicks_by_bounds(bounds_to_click)
             self.ui_helper.click_submit_button()
@@ -134,7 +144,7 @@ class DuolingoBot:
                 print("In question screen. Answering question...")
                 self.answer_question(tree)
 
-            elif self.ui_helper.is_in_no_hearts_screen():
+            elif is_in_no_hearts_screen(tree):
                 print("No hearts.")
                 self.state = "END"
 

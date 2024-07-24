@@ -40,6 +40,11 @@ def is_app_launched(tree: ET.ElementTree) -> bool:
     return False
 
 
+def is_in_no_hearts_screen(tree: ET.ElementTree) -> bool:
+    resource_id = "com.duolingo:id/noHeartsTitle"
+    return tree.find(f".//*[@resource-id='{resource_id}']") is not None
+
+
 def is_in_unit_selection_screen(tree: ET.ElementTree) -> bool:
     return any(tree.find(f".//*[@resource-id='{element}']") is not None for element in ELEMENTS_OF_UNIT_SELECTION)
 
@@ -82,35 +87,51 @@ def extract_origin_sentence(tree: ET.ElementTree) -> str:
         return ""  # Return an empty string if the element does not exist
 
 
-def extract_option_list_base(
-    tree: ET.ElementTree, container_resource_id: str
-) -> List[Tuple[str, Dict[str, int]]]:
+def extract_option_list(tree: ET.ElementTree, container_resource_id: str, option_text_resource_id: str) -> List[Tuple[str, Dict[str, int]]]:
+    """Extract options from a specified container and option text resource IDs."""
     options: List[Tuple[str, Dict[str, int]]] = []
-    tap_tokens = tree.findall(
-        f".//*[@resource-id='{container_resource_id}']//*[@resource-id='com.duolingo:id/tapToken']"
-    )
-    for token in tap_tokens:
-        option_text_element = token.find(
-            ".//*[@resource-id='com.duolingo:id/optionText']"
-        )
-        if option_text_element is not None:
-            option_text: str = option_text_element.attrib.get("text", "")
-            bounds = _bounds_str_to_dict(option_text_element.attrib["bounds"])
+
+    container = tree.find(f".//*[@resource-id='{container_resource_id}']")
+    if container is None:
+        return options
+
+    option_text_elements = container.findall(
+        f".//*[@resource-id='{option_text_resource_id}']")
+    for element in option_text_elements:
+        if element is not None:
+            option_text: str = element.attrib.get("text", "")
+            bounds: Dict[str, int] = _bounds_str_to_dict(
+                element.attrib["bounds"])
             option: Tuple[str, Dict[str, int]] = (option_text, bounds)
             options.append(option)
     return options
 
 
 def extract_selected_options(tree: ET.ElementTree):
-    return extract_option_list_base(tree, "com.duolingo:id/guessContainer")
+    """ 已选的 """
+    return extract_option_list(tree, "com.duolingo:id/guessContainer", "com.duolingo:id/optionText")
 
 
 def extract_alternative_options(tree: ET.ElementTree):
-    options = extract_option_list_base(
-        tree, "com.duolingo:id/optionsContainer")
+    """ 备选的 """
+    options = extract_option_list(
+        tree, "com.duolingo:id/optionsContainer", "com.duolingo:id/optionText")
     if not options:
-        options = extract_option_list_base(tree, "com.duolingo:id/tapOptions")
+        options = extract_option_list(
+            tree, "com.duolingo:id/tapOptions", "com.duolingo:id/optionText")
     return options
+
+
+def extract_option_list_of_word_translation(tree: ET.ElementTree) -> List[Tuple[str, Dict[str, int]]]:
+    return extract_option_list(tree, "com.duolingo:id/options", "com.duolingo:id/optionText")
+
+
+def extract_option_list_of_images(tree: ET.ElementTree) -> List[Tuple[str, Dict[str, int]]]:
+    return extract_option_list(tree, "com.duolingo:id/selection", "com.duolingo:id/imageText")
+
+
+def extract_option_list_of_scaled_text(tree: ET.ElementTree) -> List[Tuple[str, Dict[str, int]]]:
+    return extract_option_list(tree, "com.duolingo:id/selection", "com.duolingo:id/scaledText")
 
 
 def detect_question_type(tree: ET.ElementTree) -> QuestionType:
@@ -156,3 +177,62 @@ def extract_matching_pairs(tree: ET.ElementTree):
             options.append((text, bounds))
 
     return words, options
+
+
+def extract_flashcard_text(tree: ET.ElementTree) -> str:
+    flashcard_resource_id = "com.duolingo:id/flashcard"
+    character_resource_id = "com.duolingo:id/character"
+    flashcard_element = tree.find(
+        f".//*[@resource-id='{flashcard_resource_id}']")
+    if flashcard_element is not None:
+        character_element = flashcard_element.find(
+            f".//*[@resource-id='{character_resource_id}']")
+        if character_element is not None:
+            return character_element.attrib.get("text", "")
+    return ""
+
+
+def extract_question_stem_text(tree: ET.ElementTree) -> str:
+    challenge_instruction_resource_id = "com.duolingo:id/challengeInstruction"
+    challenge_instruction_element = tree.find(
+        f".//*[@resource-id='{challenge_instruction_resource_id}']")
+    if challenge_instruction_element is not None:
+        text = challenge_instruction_element.attrib.get("text", "")
+        # Extract text within quotes
+        match = re.search(r'“(.+?)”', text)
+        if match:
+            return match.group(1)
+    return ""
+
+
+def get_answer_status(tree: ET.ElementTree):
+    result = {
+        "status": "unknown",
+        "correct_answer": None,
+        "selected_options": None,
+        "alternative_options": None,
+        "original_sentence": None
+    }
+    ribbon_primary_title_id = "com.duolingo:id/ribbonPrimaryTitle"
+    ribbon_primary_text_id = "com.duolingo:id/ribbonPrimaryText"
+    ribbon_primary_title_element = tree.find(
+        f".//*[@resource-id='{ribbon_primary_title_id}']")
+    if ribbon_primary_title_element is not None:
+        status_text = ribbon_primary_title_element.attrib.get("text", "")
+        if "不正确" in status_text:
+            result["status"] = "incorrect"
+            ribbon_primary_text_element = tree.find(
+                f".//*[@resource-id='{ribbon_primary_text_id}']")
+            if ribbon_primary_text_element is not None:
+                result["correct_answer"] = ribbon_primary_text_element.attrib.get(
+                    "text", "")
+            selected_options = extract_selected_options(tree)
+            result["selected_options"] = [option[0]
+                                          for option in selected_options]
+            alternative_options = extract_alternative_options(tree)
+            result["alternative_options"] = [option[0]
+                                             for option in alternative_options]
+        else:
+            result["status"] = "correct"
+        result["original_sentence"] = extract_origin_sentence(tree)
+    return result
