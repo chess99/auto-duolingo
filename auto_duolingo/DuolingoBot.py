@@ -77,6 +77,7 @@ class DuolingoBot:
             options = extract_option_list_of_images(tree)
             bounds_to_click = solve_translate_word(word, options)
             self.ui_helper.perform_clicks_by_bounds(bounds_to_click)
+            self.ui_helper.click_submit_button()
 
         if question_type == QuestionType.CHOOSE_MATCHING_PAIR:
             words, options = extract_matching_pairs(tree)

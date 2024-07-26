@@ -22,8 +22,9 @@ def save_results_to_db(all_results):
         if result_type == "WORD_PAIR":
             for data in data_list:
                 prompt, correct_choice = data
-                success_count += word_pairs_db.insert_word_group(
+                lastrowid = word_pairs_db.insert_word_pair(
                     [prompt, correct_choice])
+                success_count += 1 if lastrowid > 0 else 0
         elif result_type == "SENTENCE_TRANSLATION":
             for data in data_list:
                 success_count += sentence_pair_db.insert_sentence_pair(

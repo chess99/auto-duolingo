@@ -1,84 +1,76 @@
+import os
 import unittest
 
 from db.WordPairsDB import WordPairsDB
 
 
 class TestWordPairsDB(unittest.TestCase):
-    def setUp(self):
-        # Create a new database in memory for each test
-        self.db = WordPairsDB(db_name=":memory:")
 
-    def tearDown(self):
-        # Close the database after each test
-        self.db.close()
+    @classmethod
+    def setUpClass(cls):
+        cls.db_name = 'test_word_pairs.db'
+        cls.db = WordPairsDB(cls.db_name)
 
-    def test_insert_and_query_single_pair(self):
-        self.db.insert_word_group(['word1', 'word2'])
-        result = self.db.query_related_words('word1')
-        self.assertIn('word1', result)
-        self.assertIn('word2', result)
-        self.assertEqual(len(result), 2)
+    @classmethod
+    def tearDownClass(cls):
+        cls.db.close()
+        os.remove(cls.db_name)
 
-    def test_insert_and_query_multiple_pairs(self):
-        self.db.insert_word_group(['word1', 'word2'])
-        self.db.insert_word_group(['word1', 'word3'])
-        self.db.insert_word_group(['word3', 'word4'])
-        self.db.insert_word_group(['word4', 'word5', 'word6'])
-        result = self.db.query_related_words('word1')
-        expected_words = ['word1', 'word2', 'word3', 'word4', 'word5', 'word6']
-        self.assertEqual(len(result), len(expected_words))
-        for word in expected_words:
-            self.assertIn(word, result)
+    def test_create_table(self):
+        # Check if the table is created successfully
+        with self.db.conn:
+            cursor = self.db.conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='word_pairs2';")
+            table_exists = cursor.fetchone()
+            self.assertIsNotNone(table_exists)
 
-    def test_query_nonexistent_word(self):
-        result = self.db.query_related_words('nonexistent')
-        self.assertEqual(len(result), 0)
+    def test_insert_word_group(self):
+        # Insert a word group and check if it is inserted correctly
+        word_group = ('hello', 'world')
+        row_id = self.db.insert_word_pair(word_group)
+        self.assertGreater(row_id, 0)
 
-    def test_insert_existing_word(self):
-        self.db.insert_word_group(['word1', 'word2'])
-        self.db.insert_word_group(['word2', 'word3'])  # word2 already exists
-        result = self.db.query_related_words('word1')
-        self.assertIn('word3', result)
-        self.assertEqual(len(result), 3)
+        with self.db.conn:
+            cursor = self.db.conn.execute(
+                "SELECT word1, word2 FROM word_pairs2 WHERE word1=? AND word2=?", word_group)
+            result = cursor.fetchone()
+            self.assertEqual(result, word_group)
 
-    def test_insert_with_existing_and_new_word(self):
-        self.db.insert_word_group(['word1', 'word2'])
-        self.db.insert_word_group(['word2', 'word3'])
-        # newword is new, word3 exists
-        self.db.insert_word_group(['word3', 'newword'])
-        result = self.db.query_related_words('word1')
-        self.assertIn('newword', result)
-        self.assertEqual(len(result), 4)
+    def test_insert_word_group_sorted(self):
+        # Insert a word group in reverse order and check if it is sorted and inserted correctly
+        word_group = ('world', 'hello')
+        row_id = self.db.insert_word_pair(word_group)
+        self.assertGreater(row_id, 0)
 
-    def test_find_matches_multiple_words(self):
-        # Setup: Insert word groups into the database
-        self.db.insert_word_group(['apple', 'banana'])
-        self.db.insert_word_group(['banana', 'cantaloupe'])
-        self.db.insert_word_group(['date', 'elderberry'])
+        with self.db.conn:
+            cursor = self.db.conn.execute(
+                "SELECT word1, word2 FROM word_pairs2 WHERE word1=? AND word2=?", ('hello', 'world'))
+            result = cursor.fetchone()
+            self.assertEqual(result, ('hello', 'world'))
 
-        # Define options
-        options = ['apple', 'banana', 'cantaloupe',  'elderberry']
+    def test_query_related_words(self):
+        # Insert word groups and query related words
+        self.db.insert_word_pair(('apple', 'banana'))
+        self.db.insert_word_pair(('banana', 'cherry'))
+        self.db.insert_word_pair(('cherry', 'date'))
 
-        # Action: Find matches for multiple words with options
-        matches = self.db.find_matches(['banana', 'date'], options)
+        related_words = self.db.query_related_words('banana')
+        self.assertIn('apple', related_words)
+        self.assertIn('cherry', related_words)
+        self.assertNotIn('date', related_words)
 
-        # Assertion: Check if the matches dictionary is correct
-        expected_matches = {'banana': 'apple', 'date': 'elderberry'}
-        self.assertEqual(matches, expected_matches)
+    def test_find_matches(self):
+        # Insert word groups and find matches
+        self.db.insert_word_pair(('cat', 'dog'))
+        self.db.insert_word_pair(('dog', 'elephant'))
+        self.db.insert_word_pair(('elephant', 'frog'))
 
-    def test_find_matches_with_nonexistent_word(self):
-        # Setup: Insert word groups into the database
-        self.db.insert_word_group(['apple', 'banana'])
+        original_words = ['cat', 'elephant']
+        options = ['dog', 'frog', 'giraffe']
+        matches = self.db.find_matches(original_words, options)
 
-        # Define options
-        options = ['apple', 'banana']
-
-        # Action: Find matches including a nonexistent word with options
-        matches = self.db.find_matches(['banana', 'nonexistent'], options)
-
-        # Assertion: Check if the matches dictionary is correct, including handling of the nonexistent word
-        expected_matches = {'banana': 'apple', 'nonexistent': None}
-        self.assertEqual(matches, expected_matches)
+        self.assertEqual(matches['cat'], 'dog')
+        self.assertEqual(matches['elephant'], 'frog')
 
 
 if __name__ == '__main__':

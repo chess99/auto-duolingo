@@ -7,12 +7,15 @@ This section covers the commands to interact with the local cache, including scr
 To scrape course data and save it to the local cache file, run the following command:
 
 ```shell
+# Download session data, parse, and store.
+# Sessions that have already been downloaded will not be downloaded again.
 python -m crawler.scrape
 
-# To run the script with the session data reset option
+# Download session data, parse, and store.
+# If there are already downloaded sessions, they will be moved to the backup folder first.
 python -m crawler.scrape --reset
 
-# To run the script with the backup data option
+# Parse and store using only the session data from the backup folder.
 python -m crawler.scrape --on-backup
 ```
 

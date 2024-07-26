@@ -45,6 +45,7 @@ def run_course_data_processing_on_backup():
         full_path = os.path.join(backup_directory, entry)
         if os.path.isdir(full_path):
             results = process_all_sessions(full_path)
+            save_results_to_db(results)
             save_results_to_json(results)
 
 
