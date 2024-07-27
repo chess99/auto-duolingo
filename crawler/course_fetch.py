@@ -111,7 +111,7 @@ def perform_session_requests(request_list, sessions_directory=".temp/sessions/")
             response = fetch_session(params)
 
             os.makedirs(sessions_directory, exist_ok=True)
-            with open(file_path, 'w') as file:
+            with open(file_path, 'w', encoding='utf-8') as file:
                 file.write(response.text)
             fetched_requests_count += 1  # Increment only on successful fetch
         except Exception as e:

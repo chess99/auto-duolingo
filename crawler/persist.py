@@ -104,7 +104,7 @@ class SentencePair(TypedDict):
 
 def get_cached_sentence_pairs() -> List[SentencePair]:
     try:
-        with open(COURSE_DATA_JSON_PATH, 'r') as file:
+        with open(COURSE_DATA_JSON_PATH, 'r', encoding='utf-8') as file:
             data = json.load(file)
         return data.get('SENTENCE_TRANSLATION', [])
     except FileNotFoundError:
@@ -113,7 +113,7 @@ def get_cached_sentence_pairs() -> List[SentencePair]:
 
 def get_cached_word_pairs():
     try:
-        with open(COURSE_DATA_JSON_PATH, 'r') as file:
+        with open(COURSE_DATA_JSON_PATH, 'r', encoding='utf-8') as file:
             data = json.load(file)
         return data.get('WORD_PAIR', [])
     except FileNotFoundError:

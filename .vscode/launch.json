@@ -9,6 +9,13 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Python: Module - crawler.scrape",
+            "type": "python",
+            "request": "launch",
+            "module": "crawler.scrape",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Python: Unittest - Discover Tests",
             "type": "python",
             "request": "launch",

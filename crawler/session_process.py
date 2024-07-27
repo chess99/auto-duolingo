@@ -113,22 +113,25 @@ def deduplicate_sentence_translations(translation_data_list):
 
 def process_session_data_from_file(file_path):
     results = defaultdict(list)  # Initialize a collection to store results
-    with open(file_path, 'r', encoding='utf-8') as file:
-        data = json.load(file)
-        challenges = data.get('challenges', [])
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+            challenges = data.get('challenges', [])
 
-        for challenge in challenges:
-            type_name = challenge['type']
-            if type_name in challenge_processor_map:
-                result = challenge_processor_map[type_name](challenge)
-                if result is not None:
-                    # Check if result["data"] is a list and flatten it if so
-                    if isinstance(result["data"], list):
-                        results[result["type"]].extend(result["data"])
-                    else:
-                        results[result["type"]].append(result["data"])
-            else:
-                print(f"No process function for type: {type_name}")
+            for challenge in challenges:
+                type_name = challenge['type']
+                if type_name in challenge_processor_map:
+                    result = challenge_processor_map[type_name](challenge)
+                    if result is not None:
+                        # Check if result["data"] is a list and flatten it if so
+                        if isinstance(result["data"], list):
+                            results[result["type"]].extend(result["data"])
+                        else:
+                            results[result["type"]].append(result["data"])
+                else:
+                    print(f"No process function for type: {type_name}")
+    except json.JSONDecodeError:
+        print(f"File {file_path} does not contain valid JSON.")
     return results  # Return the collected results
 
 

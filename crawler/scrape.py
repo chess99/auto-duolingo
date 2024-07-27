@@ -53,19 +53,19 @@ def main():
     parser = argparse.ArgumentParser(
         description="Run the web scraping process.")
 
-    parser.add_argument('--on-backup', action='store_true',
+    parser.add_argument('--parse-backup', action='store_true',
                         help="Run processing on backup data")
 
-    parser.add_argument('--reset', action='store_true',
+    parser.add_argument('--download-again', action='store_true',
                         help="Reload session data")
 
     args = parser.parse_args()
 
-    if args.on_backup:
+    if args.parse_backup:
         run_course_data_processing_on_backup()
     else:
         all_results = run_course_data_processing(
-            {"reset_session_data": args.reset})
+            {"reset_session_data": args.download_again})
         save_results_to_db(all_results)
         save_results_to_json(all_results)
 

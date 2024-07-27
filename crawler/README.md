@@ -13,10 +13,10 @@ python -m crawler.scrape
 
 # Download session data, parse, and store.
 # If there are already downloaded sessions, they will be moved to the backup folder first.
-python -m crawler.scrape --reset
+python -m crawler.scrape --download-again
 
 # Parse and store using only the session data from the backup folder.
-python -m crawler.scrape --on-backup
+python -m crawler.scrape --parse-backup
 ```
 
 ### Reading Course Data from Local Cache
