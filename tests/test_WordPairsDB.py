@@ -8,13 +8,21 @@ class TestWordPairsDB(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        # Construct the path to the test database file
+        cls.current_dir = os.path.dirname(__file__)
+        cls.data_folder = os.path.join(cls.current_dir, '..', 'data')
         cls.db_name = 'test_word_pairs.db'
-        cls.db = WordPairsDB(cls.db_name)
+        cls.db_path = os.path.join(cls.data_folder, cls.db_name)
+        # Ensure the test database does not exist before starting tests
+        if os.path.exists(cls.db_path):
+            os.remove(cls.db_path)
+        cls.db = WordPairsDB(cls.db_path)
 
     @classmethod
     def tearDownClass(cls):
         cls.db.close()
-        os.remove(cls.db_name)
+        if os.path.exists(cls.db_path):
+            os.remove(cls.db_path)
 
     def test_create_table(self):
         # Check if the table is created successfully
@@ -62,15 +70,15 @@ class TestWordPairsDB(unittest.TestCase):
     def test_find_matches(self):
         # Insert word groups and find matches
         self.db.insert_word_pair(('cat', 'dog'))
-        self.db.insert_word_pair(('dog', 'elephant'))
-        self.db.insert_word_pair(('elephant', 'frog'))
+        self.db.insert_word_pair(('elephant', 'crane'))
+        self.db.insert_word_pair(('frog', 'elephant'))
 
         original_words = ['cat', 'elephant']
-        options = ['dog', 'frog', 'giraffe']
+        options = ['dog', 'crane', 'giraffe']
         matches = self.db.find_matches(original_words, options)
 
         self.assertEqual(matches['cat'], 'dog')
-        self.assertEqual(matches['elephant'], 'frog')
+        self.assertEqual(matches['elephant'], 'crane')
 
 
 if __name__ == '__main__':

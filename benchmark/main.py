@@ -15,8 +15,8 @@
 # 从 get_cached_sentence_pairs() 的结果中随机取出 20 个，然后分别调用这两个函数，max_attempts 都使用 1, 统计准确率
 import random
 
-from auto_duolingo.translate_llm import llm_sort_substrings, llm_sort_substrings_2
 from crawler.persist import get_cached_sentence_pairs
+from llm.translate_llm import llm_sort_substrings, llm_sort_substrings_2
 
 
 def randomize_tokens(tokens, wrongTokens):

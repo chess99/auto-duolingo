@@ -1,6 +1,6 @@
 import unittest
 
-from auto_duolingo.lang_detect import detect_language
+from llm.lang_detect import detect_language
 
 
 class TestLanguageDetection(unittest.TestCase):

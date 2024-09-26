@@ -1,11 +1,6 @@
 from typing import Dict, List, Tuple
 
 from auto_duolingo.string_util import sort_substrings
-from auto_duolingo.translate_llm import (
-    llm_pick_corresponding_pronunciation,
-    llm_pick_semantically_matching_word,
-    llm_sort_translations_by_original_order,
-)
 from db.SentencePairDB import SentencePairDB
 from db.WordPairsDB import WordPairsDB
 
@@ -34,8 +29,6 @@ def solve_translate_sentence(sentence: str, options_with_bounds: List[Tuple[str,
 
     if translation is None:
         sorted_substrings = []
-        # sorted_substrings = llm_sort_substrings(
-        #     sentence, [substring for substring, _ in options_with_bounds])
 
     print(f"sorted_substrings: {sorted_substrings}")
 
@@ -52,8 +45,6 @@ def solve_translate_word(word: str, options_with_bounds: List[Tuple[str, Dict[st
     print(f"db_matches: {db_matches}")
 
     translation = db_matches.get(word)
-    if not translation:
-        translation = llm_pick_semantically_matching_word(word, options)
 
     bounds_to_click = map_options_to_bounds([translation], options_with_bounds)
     return bounds_to_click
@@ -66,8 +57,6 @@ def solve_word_pronunciation(word: str, options_with_bounds: List[Tuple[str, Dic
     print(f"db_matches: {db_matches}")
 
     translation = db_matches.get(word)
-    if not translation:
-        translation = llm_pick_corresponding_pronunciation(word, options)
 
     bounds_to_click = map_options_to_bounds([translation], options_with_bounds)
     return bounds_to_click
@@ -92,11 +81,12 @@ def solve_matching_pairs(words_with_bounds, options_with_bounds, disable_inferen
                 break
 
     if not disable_inference and unmatched_words:
-        sorted_translations = llm_sort_translations_by_original_order(
-            unmatched_words, [option for option in option_words if option not in db_matches.values()])
-        for word, translation in zip(unmatched_words, sorted_translations):
-            db_matches[word] = translation
-            print(f"Matched '{word}' with '{translation}'.")
+        # Simple fallback logic for unmatched words
+        unmatched_options = [
+            option for option in option_words if option not in db_matches.values()]
+        for word, option in zip(unmatched_words, unmatched_options):
+            db_matches[word] = option
+            print(f"Matched '{word}' with '{option}'.")
 
     all_words = []
     for word, translation in db_matches.items():

@@ -1,8 +1,2 @@
-appium-python-client
+jellyfish
 uiautomator2
-opencv-python
-spacy
-pytesseract
-zhipuai
-volcenginesdkarkruntime
-easyocr

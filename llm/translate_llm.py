@@ -4,9 +4,9 @@ from typing import List
 from volcenginesdkarkruntime import Ark
 from zhipuai import ZhipuAI
 
-from auto_duolingo.lang_detect import detect_language
 from auto_duolingo.string_util import sort_substrings
 from config import ARK_API_KEY, ZHIPUAI_API_KEY
+from llm.lang_detect import detect_language
 
 LLM_IN_USE = "ark"  # "zhipuai" or "ark"
 
@@ -91,6 +91,7 @@ def llm_sort_substrings(original_sentence: str, substrings: List[str], max_attem
     print("Error: Could not generate a valid translation with the provided substrings.")
     return []
 
+
 def llm_sort_substrings_2(original_sentence: str, substrings: List[str], max_attempts: int = 3) -> List[str]:
     original_language = detect_language(original_sentence)
     target_language = detect_language(' '.join(substrings))
@@ -131,7 +132,6 @@ def llm_sort_substrings_2(original_sentence: str, substrings: List[str], max_att
 
     print("No valid translation found after all attempts.")
     return []
-
 
 
 def llm_pick_semantically_matching_word(original_word: str, options: List[str]) -> str:
