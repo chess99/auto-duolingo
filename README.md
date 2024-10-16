@@ -1,6 +1,6 @@
 # Auto Duolingo
 
-Auto Duolingo 是一个自动化工具，旨在帮助用户在 Duolingo 应用程序中自动完成练习和任务。
+Auto Duolingo 是一个自动化工具，旨在帮助用户在多邻国（Duolingo）应用中自动完成练习和任务。
 
 目前只支持 Android 设备。
 
